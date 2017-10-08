@@ -13,7 +13,7 @@ using namespace std;
 struct node
 {
 	int cost;
-	BitVector rel;
+	bit_vector rel;
 	int child[2];
 
 	node()
@@ -21,6 +21,40 @@ struct node
 		cost=-1;
 		child[0]=-1;
 		child[1]=-1;
+	}
+
+	void assign_bit_vector(bit_vector &s)
+	{
+		rel.assign(s);
+
+		return ;
+	}
+	void assign_cost(int c)
+	{
+		cost=c;
+		return ;
+	}
+	string to_string()
+	{
+		return rel.to_string();
+	}
+	void set_children(int a,int b)
+	{
+		if(a<b)
+		{
+			child[0]=a;
+			child[1]=b;
+		}
+		else
+		{
+			child[0]=b;
+			child[1]=a;
+		}
+		return ;
+	}
+	int get_cost()
+	{
+		return cost;
 	}
 
 };
@@ -144,14 +178,47 @@ struct relation_graph
 
 };
 
-EnumerateCmpRec(S1, S2, X)
-for each N ⊆ N (S2, X): N 6= ∅
-if dpTable[S2 ∪ N]6= ∅ ∧
-∃(u, v) ∈ E : u ⊆ S1 ∧ v ⊆ S2 ∪ N
-EmitCsgCmp(S1, S2 ∪ N)
-X = X ∪ N (S2, X)
-for each N ⊆ N (S2, X): N 6= ∅
-EnumerateCmpRec(S1, S2 ∪ N, X)
+
+
+void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
+{
+	int s1_ind,s2_ind;
+
+	s1_ind=dp_table[s1.to_string()];
+	s2_ind=dp_table[s2.to_string()];
+
+	int cost=cost_calc(s1_ind,s2_ind);
+
+	bit_vector s;
+	s.assign(s1);
+	s.or(s2);
+
+	if(dp_table[s.to_string()]==dp_table.end())
+	{
+		node temp;
+		temp.assign_bit_vector(s);
+		temp.assign_cost(cost);
+		temp.set_children(s1_ind,s2_ind);
+
+		node_list.push_back(temp);
+
+		dp_table[temp.to_string()]=node_list.size()-1;
+
+	}
+	else
+	{
+		int s_ind;
+
+		if(cost<nodes[s_ind].get_cost())
+		{
+			nodes[s_ind].assign_cost(cost);
+			nodes[s_ind].set_children(s1_ind,s2_ind);
+		}
+	}
+
+	return ;
+
+}
 
 
 void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
