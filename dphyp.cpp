@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <map>
 #include <vector>
-
+#include <bitset>
 using namespace std;
 
 
@@ -15,195 +15,118 @@ struct node
 	int cost;
 	BitVector rel;
 	int child[2];
+
+	node()
+	{
+		cost=-1;
+		child[0]=-1;
+		child[1]=-1;
+	}
+
 };
 
-struct BitVector
+
+struct bit_vector
 {
-	int BitSize;
-	vector<int> v;
+	bitset<128> arr(0);
+	int bit_size;
 
-	int MaxIndex()
+	BitVector()
 	{
-		for(int i=BitSize-1;i>=0;i--)
-		{
-			if(v[i]==1)
-			{
-				return i;
-			}
-		}
+		bit_size=graph.size();
+	};
 
-		return -1;
-	}
-
-	void SINGLE(int k)
+	void assign(bit_vector &a)
 	{
-		for(int i=0;i<BitSize;i++)
-		{
-			v[i]=0;
-		}
-
-		if(k<BitSize)
-		{
-			v[k]=1;
-		}
+		arr=a.arr;
 		return ;
 	}
 
-	int DIFF(BitVector &u)
-	{	
-		if(BitSize!=u.BitSize)
-		{
-			return -1;
-		}
-
-		for(int i=0;i<BitSize;i++)
-		{
-			if(v[i]==1 && u.v[i]==1)
-			{
-				v[i]=0;
-			}
-		}
-
-		return 0;
-	}
-
-	int AND(BitVector &u)
-	{	
-		if(BitSize!=u.BitSize)
-		{
-			return -1;
-		}
-
-		for(int i=0;i<BitSize;i++)
-		{
-			if(v[i]==1 && u.v[i]==1)
-			{
-				v[i]=1;
-			}
-			else
-			{
-				v[i]=0;
-			}
-		}
-
-		return 0;
-	}
-
-	int OR(BitVector &u)
-	{	
-		if(BitSize!=u.BitSize)
-		{
-			return -1;
-		}
-
-		for(int i=0;i<BitSize;i++)
-		{
-			if(v[i]==0 && u.v[i]==0)
-			{
-				v[i]=0;
-			}
-			else
-			{
-				v[i]=1;
-			}
-		}
-
-		return 0;
-	}
-
-
-
-
-
-
-	int XOR(BitVector &u)
-	{	
-		if(BitSize!=u.BitSize)
-		{
-			return -1;
-		}
-
-		for(int i=0;i<BitSize;i++)
-		{
-			if(v[i]==u.v[i])
-			{
-				v[i]=0;
-			}
-			else
-			{
-				v[i]=1;
-			}
-		}
-
-		return 0;
-	}
-
-	void ASSIGN(BitVector &u)
-	{	
-		BitSize=u.BitSize;
-
-		for(int i=0;i<BitSize;i++)
-		{
-			v[i]=u.v[i];
-			
-		}
-
+	void OR(bit_vector &a)
+	{
+		arr|=a.arr;
 		return;
 	}
 
-	void COMP()
-	{	
-		
-		for(int i=0;i<BitSize;i++)
-		{
-			if(v[i]==1)
-			{
-				v[i]=0;
-			}
-			else
-			{
-				v[i]=1;
-			}
-		}
-
+	void set_size(int n)
+	{
+		bit_size=n;
 		return ;
 	}
 
-	void UPFILL(int k)
+	void reset()
 	{
-		for(int i=0;i<BitSize;i++)
-		{
-			if(i>k)
-			{
-				v[i]=1;	
-			}
-			else
-			{
-				v[i]=0;
-			}
-			
-		}
-
-		return;
+		arr.reset();
+		return ;
 	}
 
-	string GET_STRING()
+	void set_index(int n)
 	{
-		string s;
+		arr[n]=1;
+		return ;
+	}
 
-		for(int i=0;i<BitSize;i++)
+	void set_lower(int n)
+	{
+		for(int i=0;i<n;i++)
 		{
-			if(v[i]==0)
+			arr[i]=1;
+		}
+	}
+
+	int count()
+	{
+		return arr.count();
+	}
+
+	void subset_enum(bit_vector &a,long long b)
+	{
+		a.reset();
+
+		for(int i=0;i<bit_size && b>0;i++)
+		{
+			if(arr[i]==1)
 			{
-				s=s+'0';
-			}
-			else
-			{
-				s=s+'1';
+				if(b%2==1)
+				{
+					a.set_index(i)=1;
+				}
+				b=b/2;
 			}
 		}
 
-		return s;
+	}
+
+	int lowest_set_bit()
+	{
+		int i=0;
+		for(i=0;i<bit_size;i++)
+		{
+			if(arr[i]==1)
+			{
+				break;
+			}
+		}
+		return i;
+	}
+
+	string to_string()
+	{
+		return arr.to_string();
+	}
+
+	vector<int> set_location()
+	{
+		vector<int> v;
+		for(int i=0;i<bit_size;i++)
+		{
+			if(arr[i]==1)
+			{
+				v.append(i);
+			}
+		}
+
+		return v;
 	}
 
 };
@@ -211,276 +134,175 @@ struct BitVector
 struct relation_graph
 {
 
-int GraphSize;
-vector<BitVector> node_array;
+	int GraphSize;
+	map<string,string> edges;
 
-void GetAllPair()
-{
-	for(int i=0;i<GraphSize;i++)
+	int size()
 	{
-		BitVector s,ns,x;
-		s.BitSize=GraphSize;
-		ns.BitSize=GraphSize;
-		x.BitSize=GraphSize;
-
-		node temp;
-		temp.cost=1;
-		temp.rel.ASSIGN(s);
-
-		nodes.push_back(temp);
-		final_tree[s.GET_STRING()]=nodes.size()-1;
-
-		s.SINGLE(i);
-		ns.ASSIGN(node_array[i]);
-		x.UPFILL(i);
-		x.v[i]=1;
-
-		EnumerateCsg(s,ns,x);
+		return GraphSize;
 	}
-
-	return ;
-}
-
-void EnumerateCsg(BitVector &S,BitVector &NS,BitVector &X);
-{
-
-	BitVector N;
-	N.ASSIGN(NS);
-	N.DIFF(X);
-
-	BitVector s,ns,x;
-
-	x.ASSIGN(X);
-
-	for(int i=0;i<N.BitSize;i++)
-	{
-		
-		if(N.v[i]==1)
-		{
-			s.SINGLE(i);
-			x.v[i]=1;
-			EnumerateCmp(S,s,node_array[i],x);
-		}
-	}
-
-	N.ASSIGN(NS);
-	N.DIFF(X);
-
-	vector<int> perm,bin;
-
-	for(int i=0;i<N.BitSize;i++)
-	{
-		if(N.v[i]==1)
-		{
-			perm.push_back(i);
-			bin.push_back(0);
-		}
-	}
-
-	while(true)
-	{
-		int c=0;
-		for(int i=0;i<bin.size();i++)
-		{
-			if(bin[i]==0)
-			{
-				c=1;
-				break;
-			}
-		}
-
-		if(c==0)
-		{
-			break;
-		}
-
-		c=1;
-
-		for(int i=0;;i++)
-		{
-			if(bin[i]+c>1)
-			{
-				bin[i]=0;
-				c=1;
-			}
-			else
-			{
-				bin[i]=bin[i]+c;
-				c=0;
-				break;
-			}
-		}
-
-		BitVector s,ns,x;
-
-		x.ASSIGN(X);
-		s.ASSIGN(S);
-		ns.ASSIGN(NS);
-
-		for(int i=0;i<bin.size();i++)
-		{
-			if(bin[i]==1)
-			{
-				s.v[perm[i]]=1;
-				ns.OR(node_array[perm[i]]);
-			}
-		}
-
-		EnumerateCsg(s,ns,x);
-
-
-	}
-
-
-
-
-	return ;
-}
-
-void EnumerateCmp(BitVector &S1,BitVector &S,BitVector &NS,BitVector &X)
-{
-
-	BitVector test;
-
-	test.ASSIGN(S);
-	test.OR(S1);
-
-	string test_string=test.GET_STRING();
-
-	string s_str,s1_str,s_ind,s1_ind;
-
-	s_str=S.GET_STRING();
-	s1_str=S1.GET_STRING();
-
-	s_ind=final_tree[s_str];
-	s1_ind=final_tree[s1_str];
-
-	if(final_tree.find(test_string)!=final_tree.end())
-	{
-		node temp;
-		temp.rel.ASSIGN(test);
-		temp.cost=0;
-		nodes.push_back(temp);
-		final_tree[test_string]=nodes.size()-1;
-
-		nodes[final_tree[test_string]].cost=nodes[s_ind].cost+nodes[s1_ind].cost;
-		nodes[final_tree[test_string]].cost+=join_cost(nodes[s_ind],nodes[s1_ind]);
-
-		nodes[final_tree[test_string]].child[0]=s_ind;
-		nodes[final_tree[test_string]].child[1]=s1_ind;
-
-	}
-	else
-	{
-		int temp_cost;
-
-		temp_cost=nodes[s_ind].cost+nodes[s1_ind].cost;
-		temp_cost+=join_cost(nodes[s_ind],nodes[s1_ind]);
-
-		if(nodes[final_tree[test_string]].cost>temp_cost)
-		{
-			nodes[final_tree[test_string]].cost=temp_cost;
-			nodes[final_tree[test_string]].child[0]=s_ind;
-			nodes[final_tree[test_string]].child[1]=s1_ind;	
-		}
-
-
-
-	}
-
-	BitVector N;
-	BitVector s,ns,x;
-
-	
-
-	N.ASSIGN(NS);
-	N.DIFF(X);
-
-	vector<int> perm,bin;
-
-	for(int i=0;i<N.BitSize;i++)
-	{
-		if(N.v[i]==1)
-		{
-			perm.push_back(i);
-			bin.push_back(0);
-		}
-	}
-
-	while(true)
-	{
-		int c=0;
-		for(int i=0;i<bin.size();i++)
-		{
-			if(bin[i]==0)
-			{
-				c=1;
-				break;
-			}
-		}
-
-		if(c==0)
-		{
-			break;
-		}
-
-		c=1;
-
-		for(int i=0;;i++)
-		{
-			if(bin[i]+c>1)
-			{
-				bin[i]=0;
-				c=1;
-			}
-			else
-			{
-				bin[i]=bin[i]+c;
-				c=0;
-				break;
-			}
-		}
-
-		BitVector s,ns,x;
-
-		x.ASSIGN(X);
-		s.ASSIGN(S);
-		ns.ASSIGN(NS);
-
-		for(int i=0;i<bin.size();i++)
-		{
-			if(bin[i]==1)
-			{
-				s.v[perm[i]]=1;
-				ns.OR(node_array[perm[i]]);
-			}
-		}
-
-		EnumerateCmp(S1,s,ns,x);
-
-
-	}
-}
-
 
 };
 
+EnumerateCmpRec(S1, S2, X)
+for each N ⊆ N (S2, X): N 6= ∅
+if dpTable[S2 ∪ N]6= ∅ ∧
+∃(u, v) ∈ E : u ⊆ S1 ∧ v ⊆ S2 ∪ N
+EmitCsgCmp(S1, S2 ∪ N)
+X = X ∪ N (S2, X)
+for each N ⊆ N (S2, X): N 6= ∅
+EnumerateCmpRec(S1, S2 ∪ N, X)
+
+
+void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
+{
+	bit_vector neighbour=neigh(s2,x);
+	bit_vector n;
+	long long count=exp2(neighbour.count());
+
+	for(int i=1;i<=count;i++)
+	{
+		neighbour.subset_enum(n,i);
+		bit_vector temp;
+		temp.assign(s2);
+		temp.OR(n);
+
+		if(dp_table.find(temp.to_string())!=dp_table.end())
+		{
+			if(check_edge(s1,temp))
+			{
+				EmitCsgCmp(s1,temp);
+			}
+		}
+	}
+
+	for(int i=1;i<=count;i++)
+	{
+		neighbour.subset_enum(n,i);
+		bit_vector temp;
+		temp.assign(s2);
+		temp.OR(n);
+
+		EnumerateCmpRec(s1,temp,x);
+	}
+
+	return ;
+}
+
+
+void EmitCsg(bit_vector &s1)
+{
+	bit_vector x;
+	int lsb=s1.lowest_set_bit();
+	x.reset();
+	x.assign(s1);
+	x.set_lower(lsb);
+
+	bit_vector neighbour=neigh(s1,x);
+
+	vector<int> v=neighbour.set_location();
+
+	for(int i=v.size()-1;i>=0;i--)
+	{
+		bit_vector s2;
+		s2.set_index(v[i]);
+
+		if(check_edge(s1,s2))
+		{
+			EmitCsgCmp(s1,s2);
+		}
+
+		EnumerateCmpRec(s1,s2,x);
+
+
+	}
+
+	return ;
+}
+
+
+void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
+{
+	bit_vector neighbour=neigh(s1,x);
+	bit_vector n;
+	long long count=exp2(neighbour.count());
+
+	for(int i=1;i<=count;i++)
+	{
+		neighbour.subset_enum(n,i);
+		bit_vector temp;
+
+		temp.assign(s1);
+		temp.or(n);
+
+		if(dp_table.find(temp.to_string())!=dp_table.end())
+		{
+			EmitCsg(temp);
+		}
+
+	}
+
+	bit_vector new_x;
+
+	new_x.assign(x);
+	new_x.or(neighbour);
+
+	for(int i=1;i<count;i++)
+	{
+		neighbour(n,i);
+		bit_vector new_s1;
+
+		new_s1.assign(s1);
+		new_s1.or(n);
+
+		
+
+		EnumerateCsgRec(new_s1,new_x);
+
+	}
+
+	return ;
+
+}
+
+
+void Solve()
+{
+	for(int i=0;i<graph.size();i++)
+	{
+		node temp;
+		temp.rel.set_size(graph.size());
+		temp.rel.set_index(i);
+
+		node_list.push_back(temp);
+		dp_table[temp.rel.to_string()]=node_list.size()-1;
+	}
+
+	for(int i=graph.size()-1;i>=0;i--)
+	{
+		bit_vector v;
+		v.set_size(graph.size());
+		v.set_index(i);
+
+		bit_vector Bv;
+		Bv.set_size(graph.size());
+		Bv.set_lower(i);
+
+		EmitCsg(v);
+		EnumerateCsgRec(v,Bv);
+
+
+	}
+}
 
 
 //global variable
-map<string,int> final_tree;
-vector<node> nodes;
+map<string,int> dp_table;
+vector<node> node_list;
+relation_graph graph;
 
 int main()
 {
-
-	int n;
-
-	cin>>n;
-
-	//Relation_input();
-	//GENERATE_GRAPH();
-
 
 	return 0;
 }
