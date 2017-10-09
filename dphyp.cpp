@@ -430,6 +430,35 @@ void Solve()
 }
 
 
+void SimplifyGraph()
+{
+	map<string,string>::iterator it1,it2;
+	for(it2=graph.edges.begin(); it2!=graph.edges.end(); ++it2)
+	{
+		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it)
+		{
+			if(it2==it1)
+			{
+				continue;
+			}
+
+			bitset<128> sl1(it1->first),sl2(it2->first),sr1(it1->second),sr2(it2->second);
+
+			if(sl1&sl2==sl1 || sr1&sl2==sr1)
+			{
+				if((sl1|sr1)&sl2 != (sl1|sr1))
+				{
+					int b=ordering_benefit(sl1,sr1,sl2,sr2);
+				}
+			}
+		}
+
+	}
+
+}
+
+
+
 //global variable
 map<string,int> dp_table;
 vector<node> node_list;
