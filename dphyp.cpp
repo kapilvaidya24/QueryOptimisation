@@ -70,6 +70,30 @@ struct bit_vector
 		bit_size=graph.size();
 	};
 
+	bool check_subset(string s)
+	{
+		bitset<128> temp(s);
+		if(arr&temp==temp)
+		{
+			return true;
+		}
+
+		return false;
+
+	}
+
+	bool check_intersection(string s)
+	{
+		bitset<128> temp(s);
+		if(arr&temp!=0)
+		{
+			return true;
+		}
+
+		return false;
+
+	}
+
 	void assign(bit_vector &a)
 	{
 		arr=a.arr;
@@ -164,6 +188,49 @@ struct bit_vector
 	}
 
 };
+
+
+bit_vector neigh(bit_vector &s,bit_vector &x)
+{
+	bit_vector neighbour;
+
+
+	for (map<string,string>::iterator it=graph.edges.begin(); it!=grph.edges.end(); ++it)
+	{
+		if(s.check_subset(it->first))
+		{
+			if(!(x.check_intersection(it->second)))
+			{
+				for(int i=0;i<it->second.size();i++)
+				{
+					if(s[i]=='1')
+					{
+						neighbour.set_index(i);
+						break;
+					}
+				}
+			}
+		}
+	}
+ 	return neighbour; 
+}
+
+bool check_edge(bit_vector &a, bit_vector &b)
+{
+	for (map<string,string>::iterator it=graph.edges.begin(); it!=grph.edges.end(); ++it)
+	{
+		if(a.check_subset(it->first))
+		{
+			if(b.check_subset(it->second))
+			{
+				return true;
+			}
+		}
+	}
+ 	return false;   
+
+}
+
 
 struct relation_graph
 {
