@@ -201,7 +201,7 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 		{
 			if(!(x.check_intersection(it->second)))
 			{
-				for(int i=0;i<it->second.size();i++)
+				for(int i=it->second.size()-1;i>=0;i--)
 				{
 					if(s[i]=='1')
 					{
@@ -211,6 +211,22 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 				}
 			}
 		}
+
+		if(s.check_subset(it->second))
+		{
+			if(!(x.check_intersection(it->first)))
+			{
+				for(int i=it->first.size()-1;i>=0;i--)
+				{
+					if(s[i]=='1')
+					{
+						neighbour.set_index(i);
+						break;
+					}
+				}
+			}
+		}
+
 	}
  	return neighbour; 
 }
@@ -222,6 +238,14 @@ bool check_edge(bit_vector &a, bit_vector &b)
 		if(a.check_subset(it->first))
 		{
 			if(b.check_subset(it->second))
+			{
+				return true;
+			}
+		}
+
+		if(a.check_subset(it->second))
+		{
+			if(b.check_subset(it->first))
 			{
 				return true;
 			}
@@ -430,9 +454,15 @@ void Solve()
 }
 
 
-void SimplifyGraph()
+bool SimplifyGraph()
 {
-	map<string,string>::iterator it1,it2;
+	int M=-1;
+	map<string,string>::iterator it1,it2,j1,j2;
+
+	int c=0;
+
+	// bitset<128> jl1(0),jr1(0),jl2(0),jr2(0);
+	
 	for(it2=graph.edges.begin(); it2!=graph.edges.end(); ++it2)
 	{
 		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it)
@@ -449,11 +479,30 @@ void SimplifyGraph()
 				if((sl1|sr1)&sl2 != (sl1|sr1))
 				{
 					int b=ordering_benefit(sl1,sr1,sl2,sr2);
+
+					if(b>M && !(check_cycle(sl1,sr1,sl2,sr2)))
+					{
+						M=b;
+						c=1;
+						j1=it1;
+						j2=it2;
+
+					}
+
 				}
 			}
 		}
 
 	}
+
+	if(jl1.count()==0)
+	{
+		return false;
+	}
+
+
+
+	return true;
 
 }
 
