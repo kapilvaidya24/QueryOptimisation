@@ -6,74 +6,45 @@
 #include <map>
 #include <vector>
 #include <bitset>
+#include <cmath>
 using namespace std;
 
 
+//global variable
+map<string,int> dp_table;
 
-struct node
+struct relation_graph
 {
-	int cost;
-	bit_vector rel;
-	int child[2];
 
-	node()
-	{
-		cost=-1;
-		child[0]=-1;
-		child[1]=-1;
-	}
+	int GraphSize;
+	map<string,string> edges;
 
-	void assign_bit_vector(bit_vector &s)
+	int size()
 	{
-		rel.assign(s);
-
-		return ;
-	}
-	void assign_cost(int c)
-	{
-		cost=c;
-		return ;
-	}
-	string to_string()
-	{
-		return rel.to_string();
-	}
-	void set_children(int a,int b)
-	{
-		if(a<b)
-		{
-			child[0]=a;
-			child[1]=b;
-		}
-		else
-		{
-			child[0]=b;
-			child[1]=a;
-		}
-		return ;
-	}
-	int get_cost()
-	{
-		return cost;
+		return GraphSize;
 	}
 
 };
 
+//global variable
+relation_graph graph;
+
 
 struct bit_vector
 {
-	bitset<128> arr(0);
+	bitset<128> arr;
 	int bit_size;
 
-	BitVector()
+	bit_vector()
 	{
+		arr.reset();
 		bit_size=graph.size();
 	};
 
 	bool check_subset(string s)
 	{
 		bitset<128> temp(s);
-		if(arr&temp==temp)
+		if((arr&temp)==temp)
 		{
 			return true;
 		}
@@ -85,7 +56,7 @@ struct bit_vector
 	bool check_intersection(string s)
 	{
 		bitset<128> temp(s);
-		if(arr&temp!=0)
+		if((arr&temp)!=0)
 		{
 			return true;
 		}
@@ -147,7 +118,7 @@ struct bit_vector
 			{
 				if(b%2==1)
 				{
-					a.set_index(i)=1;
+					a.set_index(i);
 				}
 				b=b/2;
 			}
@@ -180,7 +151,7 @@ struct bit_vector
 		{
 			if(arr[i]==1)
 			{
-				v.append(i);
+				v.push_back(i);
 			}
 		}
 
@@ -189,13 +160,66 @@ struct bit_vector
 
 };
 
+struct node
+{
+	int cost;
+	bit_vector rel;
+	int child[2];
+
+	node()
+	{
+		cost=-1;
+		child[0]=-1;
+		child[1]=-1;
+	}
+
+	void assign_bit_vector(bit_vector &s)
+	{
+		rel.assign(s);
+
+		return ;
+	}
+	void assign_cost(int c)
+	{
+		cost=c;
+		return ;
+	}
+	string to_string()
+	{
+		return rel.to_string();
+	}
+	void set_children(int a,int b)
+	{
+		if(a<b)
+		{
+			child[0]=a;
+			child[1]=b;
+		}
+		else
+		{
+			child[0]=b;
+			child[1]=a;
+		}
+		return ;
+	}
+	int get_cost()
+	{
+		return cost;
+	}
+
+};
+
+//global variable
+vector<node> node_list;
+
+
 
 bit_vector neigh(bit_vector &s,bit_vector &x)
 {
 	bit_vector neighbour;
 
 
-	for (map<string,string>::iterator it=graph.edges.begin(); it!=grph.edges.end(); ++it)
+	for (map<string,string>::iterator it=graph.edges.begin(); it!=graph.edges.end(); ++it)
 	{
 		if(s.check_subset(it->first))
 		{
@@ -203,7 +227,7 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 			{
 				for(int i=it->second.size()-1;i>=0;i--)
 				{
-					if(s[i]=='1')
+					if(it->second[i]=='1')
 					{
 						neighbour.set_index(i);
 						break;
@@ -218,7 +242,7 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 			{
 				for(int i=it->first.size()-1;i>=0;i--)
 				{
-					if(s[i]=='1')
+					if(it->first[i]=='1')
 					{
 						neighbour.set_index(i);
 						break;
@@ -233,7 +257,7 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 
 bool check_edge(bit_vector &a, bit_vector &b)
 {
-	for (map<string,string>::iterator it=graph.edges.begin(); it!=grph.edges.end(); ++it)
+	for (map<string,string>::iterator it=graph.edges.begin(); it!=graph.edges.end(); ++it)
 	{
 		if(a.check_subset(it->first))
 		{
@@ -255,20 +279,10 @@ bool check_edge(bit_vector &a, bit_vector &b)
 
 }
 
-
-struct relation_graph
+int cost_calc(int a,int b)
 {
-
-	int GraphSize;
-	map<string,string> edges;
-
-	int size()
-	{
-		return GraphSize;
-	}
-
-};
-
+	return 1;
+}
 
 
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
@@ -282,9 +296,9 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 
 	bit_vector s;
 	s.assign(s1);
-	s.or(s2);
+	s.OR(s2);
 
-	if(dp_table[s.to_string()]==dp_table.end())
+	if(dp_table.find(s.to_string())==dp_table.end())
 	{
 		node temp;
 		temp.assign_bit_vector(s);
@@ -300,10 +314,10 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	{
 		int s_ind;
 
-		if(cost<nodes[s_ind].get_cost())
+		if(cost<node_list[s_ind].get_cost())
 		{
-			nodes[s_ind].assign_cost(cost);
-			nodes[s_ind].set_children(s1_ind,s2_ind);
+			node_list[s_ind].assign_cost(cost);
+			node_list[s_ind].set_children(s1_ind,s2_ind);
 		}
 	}
 
@@ -391,7 +405,7 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 		bit_vector temp;
 
 		temp.assign(s1);
-		temp.or(n);
+		temp.OR(n);
 
 		if(dp_table.find(temp.to_string())!=dp_table.end())
 		{
@@ -403,15 +417,15 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 	bit_vector new_x;
 
 	new_x.assign(x);
-	new_x.or(neighbour);
+	new_x.OR(neighbour);
 
 	for(int i=1;i<count;i++)
 	{
-		neighbour(n,i);
+		neighbour.subset_enum(n,i);
 		bit_vector new_s1;
 
 		new_s1.assign(s1);
-		new_s1.or(n);
+		new_s1.OR(n);
 
 		
 
@@ -453,6 +467,16 @@ void Solve()
 	}
 }
 
+int ordering_benefit(bitset<128> a,bitset<128> b,bitset<128> c,bitset<128> d)
+{
+	return 1;
+}
+
+bool check_cycle(bitset<128> sl1,bitset<128> sr1, bitset<128> sl2,bitset<128> sr2)
+{
+	return false;
+}
+
 
 bool SimplifyGraph()
 {
@@ -465,7 +489,7 @@ bool SimplifyGraph()
 	
 	for(it2=graph.edges.begin(); it2!=graph.edges.end(); ++it2)
 	{
-		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it)
+		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it1)
 		{
 			if(it2==it1)
 			{
@@ -474,9 +498,9 @@ bool SimplifyGraph()
 
 			bitset<128> sl1(it1->first),sl2(it2->first),sr1(it1->second),sr2(it2->second);
 
-			if(sl1&sl2==sl1 || sr1&sl2==sr1)
+			if((sl1&sl2)==sl1 || (sr1&sl2)==sr1)
 			{
-				if((sl1|sr1)&sl2 != (sl1|sr1))
+				if(((sl1|sr1)&sl2) != (sl1|sr1))
 				{
 					int b=ordering_benefit(sl1,sr1,sl2,sr2);
 
@@ -495,11 +519,6 @@ bool SimplifyGraph()
 
 	}
 
-	if(jl1.count()==0)
-	{
-		return false;
-	}
-
 
 
 	return true;
@@ -508,13 +527,24 @@ bool SimplifyGraph()
 
 
 
-//global variable
-map<string,int> dp_table;
-vector<node> node_list;
-relation_graph graph;
+
 
 int main()
 {
+	
+	int n;
+	string s1,s2;
+
+	cin>>n;
+	cin>>graph.GraphSize;
+
+	for(int i=0;i>n;i++)
+	{
+		cin>>s1>>s2;
+		graph.edges[s1]=s2;
+	}
+
+	Solve();
 
 	return 0;
 }
