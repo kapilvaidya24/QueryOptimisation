@@ -186,7 +186,13 @@ struct relation_graph
 
 };
 
+struct directed_graph
+{
+	vector<vector<int> > directed_edges;
+};
 
+//global variable
+directed_graph join_graph;
 
 //global variable
 relation_graph graph;
@@ -526,7 +532,6 @@ void print_map(map<string,int> a)
 
 }
 
-
 void Solve()
 {
 	for(int i=0;i<graph.size();i++)
@@ -560,64 +565,220 @@ void Solve()
 	}
 }
 
-int ordering_benefit(bitset<128> a,bitset<128> b,bitset<128> c,bitset<128> d)
+int ordering_benefit(int i,int j)
 {
 	return 1;
 }
 
-bool check_cycle(bitset<128> sl1,bitset<128> sr1, bitset<128> sl2,bitset<128> sr2)
+bool dfs(vector<int> &visited,int ind)
 {
+	for(int i=0;i<join_graph.directed_edges[ind].size();i++)
+	{
+		int temp=join_graph.directed_edges[ind][i];
+		if(visited[temp]==0)
+		{
+			visited[temp]=1;
+			if(dfs(visited,temp))
+			{
+				return true;
+			}
+		}
+		else
+		{
+			return true;
+		}
+	}
+
 	return false;
 }
 
 
-// bool SimplifyGraph()
-// {
-// 	int M=-1;
-// 	map<string,string>::iterator it1,it2,j1,j2;
+bool check_csg_cmp_pair()
+{
+	return false;
+}
 
-// 	int c=0;
+bool check_cycle(int p,int q)
+{
+	join_graph.directed_edges[p].push_back(q);
 
-// 	// bitset<128> jl1(0),jr1(0),jl2(0),jr2(0);
+	vector<int> visited(join_graph.directed_edges.size(),0);
+
+	int c=0;
+
+	for(int i=0;i<join_graph.directed_edges.size();i++)
+	{
+		if(visited[i]==0)
+		{
+			visited[i]=1;
+			if(dfs(visited,i))
+			{
+				c=1;
+				break;
+			}
+		}
+	}
+
+
+	join_graph.directed_edges[p].pop_back();
+
+	if(c==0)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+
+bool SimplifyGraph()
+{
+	int M=-1;
+
+	int j1=-1,j2=-1;
+
+	for(int i=0;i<graph.edge_list.size();i++)
+	{
+		for(int j=0;j<graph.edge_list.size();j++)
+		{
+			if(i==j)
+			{
+				continue;
+			}
+
+			int c=0;
+
+			if(graph.edge_list[i].p.check_subset(graph.edge_list[j].q) || graph.edge_list[i].p.check_subset(graph.edge_list[j].q))
+			{
+				bit_vector temp;
+				temp.assign(graph.edge_list[j].p);
+				temp.OR(graph.edge_list[j].q);
+
+				if(!(graph.edge_list[i].p.check_subset(temp)))
+				{
+					c=1;
+				}
+			}
+
+			if(graph.edge_list[i].q.check_subset(graph.edge_list[j].q) || graph.edge_list[i].q.check_subset(graph.edge_list[j].q))
+			{
+				bit_vector temp;
+				temp.assign(graph.edge_list[j].p);
+				temp.OR(graph.edge_list[j].q);
+
+				if(!(graph.edge_list[i].q.check_subset(temp)))
+				{
+					c=1;
+				}
+			}
+
+
+			if(c==1)
+			{
+				int b= ordering_benefit(i,j);
+
+				if(b>M && !(check_cycle(i,j)))
+				{
+					j1=i;
+					j2=j;
+					M=b;
+				}
+			}
+		}
+	}
+
+	if(M==-1)
+	{
+		return false;
+	}
+
+	join_graph.directed_edges[j1].push_back(j2);
+
+	if(graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q) || graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q))
+	{
+		bit_vector temp;
+		temp.assign(graph.edge_list[j2].p);
+		temp.OR(graph.edge_list[j2].q);
+
+		if(!(graph.edge_list[j1].p.check_subset(temp)))
+		{
+			bit_vector update;
+			update.assign(temp);
+			update.OR(graph.edge_list[j1].p);
+
+			graph.edge_list[j1].p.assign(update);
+
+			return true;
+		}
+	}
+	else
+	{
+		bit_vector temp;
+		temp.assign(graph.edge_list[j2].p);
+		temp.OR(graph.edge_list[j2].q);
+
+		bit_vector update;
+		update.assign(temp);
+		update.OR(graph.edge_list[j1].q);
+
+		graph.edge_list[j1].q.assign(update);
+
+		return true;
+	}
+
+
+
+
+
+	return true;
+
+}
+
+void Graph_Simplification_Optimizer()
+{
+	vector<relation_graph> graph_vector;
+	graph_vector.push_back(graph);
 	
-// 	for(it2=graph.edges.begin(); it2!=graph.edges.end(); ++it2)
-// 	{
-// 		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it1)
-// 		{
-// 			if(it2==it1)
-// 			{
-// 				continue;
-// 			}
+	while(true)
+	{
+		if(SimplifyGraph())
+		{
+			graph_vector.push_back(graph);
+		}
+		else
+		{
+			break;
+		}
+	}
 
-// 			bitset<128> sl1(it1->first),sl2(it2->first),sr1(it1->second),sr2(it2->second);
+	int start=0,end=graph_vector.size();
 
-// 			if((sl1&sl2)==sl1 || (sr1&sl2)==sr1)
-// 			{
-// 				if(((sl1|sr1)&sl2) != (sl1|sr1))
-// 				{
-// 					int b=ordering_benefit(sl1,sr1,sl2,sr2);
+	while(true)
+	{
+		if(start+2>=end)
+		{
+			break;
+		}
 
-// 					if(b>M && !(check_cycle(sl1,sr1,sl2,sr2)))
-// 					{
-// 						M=b;
-// 						c=1;
-// 						j1=it1;
-// 						j2=it2;
+		int mid=(start+end)/2;
+		graph=graph_vector[mid];
 
-// 					}
+		if(check_csg_cmp_pair())
+		{
+			start=mid;
+		}
+		else
+		{
+			end=mid;
+		}
+	}
 
-// 				}
-// 			}
-// 		}
+	graph=graph_vector[start];
 
-// 	}
-
-
-
-// 	return true;
-
-// }
-
+	return;
+}
 
 
 
@@ -642,6 +803,10 @@ int main()
 
 		graph.edge_list.push_back(temp);
 	}
+
+	join_graph.directed_edges.resize(n);
+
+	Graph_Simplification_Optimizer();
 
 	Solve();
 
