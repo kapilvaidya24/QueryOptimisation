@@ -13,6 +13,11 @@ using namespace std;
 //global variable
 map<string,int> dp_table;
 
+//global variable
+bool check_pair_count=false;
+long long csg_cmp_pair_count=0;
+long long csg_cmp_pair_limit=100000;
+
 struct bit_vector
 {
 	bitset<128> arr;
@@ -170,7 +175,6 @@ struct edge
 		return ;
 	}
 
-
 };
 
 struct relation_graph
@@ -249,8 +253,6 @@ struct node
 //global variable
 vector<node> node_list;
 
-
-
 bit_vector neigh(bit_vector &s,bit_vector &x)
 {
 	cout<<"neigh called"<<endl;
@@ -324,7 +326,6 @@ int cost_calc(int a,int b)
 	return 1;
 }
 
-
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
 	cout<<"Emitcsg cmp called"<<endl;
@@ -370,12 +371,16 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 		}
 	}
 
+	if(check_pair_count)
+	{
+		csg_cmp_pair_count++;
+	}
+
 	cout<<"Emitcsg cmp returned"<<endl;
 
 	return ;
 
 }
-
 
 void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 {
@@ -407,6 +412,14 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 				EmitCsgCmp(s1,temp);
 			}
 		}
+
+		if(csg_cmp_pair_count>csg_cmp_pair_limit)
+		{
+			return;
+		}
+
+
+
 	}
 
 	for(int i=1;i<=count;i++)
@@ -416,6 +429,11 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 		temp.assign(s2);
 		temp.OR(n);
 
+		if(csg_cmp_pair_count>csg_cmp_pair_limit)
+		{
+			return;
+		}
+
 		EnumerateCmpRec(s1,temp,x);
 	}
 
@@ -423,7 +441,6 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 
 	return ;
 }
-
 
 void EmitCsg(bit_vector &s1)
 {
@@ -456,9 +473,19 @@ void EmitCsg(bit_vector &s1)
 
 		cout<<"in the neighbour gen loop"<<endl;
 
+		if(csg_cmp_pair_count>csg_cmp_pair_limit)
+		{
+			return;
+		}
+
 		if(check_edge(s1,s2))
 		{
 			EmitCsgCmp(s1,s2);
+		}
+
+		if(csg_cmp_pair_count>csg_cmp_pair_limit)
+		{
+			return;
 		}
 
 		EnumerateCmpRec(s1,s2,x);
@@ -472,7 +499,6 @@ void EmitCsg(bit_vector &s1)
 
 	return ;
 }
-
 
 void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 {
@@ -488,6 +514,11 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 
 		temp.assign(s1);
 		temp.OR(n);
+
+		if(csg_cmp_pair_count>csg_cmp_pair_limit)
+		{
+			return;
+		}
 
 		if(dp_table.find(temp.to_string())!=dp_table.end())
 		{
@@ -509,7 +540,10 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 		new_s1.assign(s1);
 		new_s1.OR(n);
 
-		
+		if(csg_cmp_pair_count>csg_cmp_pair_limit)
+		{
+			return;
+		}
 
 		EnumerateCsgRec(new_s1,new_x);
 
@@ -518,7 +552,6 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 	return ;
 
 }
-
 
 void print_map(map<string,int> a)
 {
@@ -529,11 +562,13 @@ void print_map(map<string,int> a)
 		cout<<it->first<<" "<<endl;
 	}
 
-
 }
 
 void Solve()
 {
+	dp_table.clear();
+	node_list.resize(0);
+
 	for(int i=0;i<graph.size();i++)
 	{
 		node temp;
@@ -592,9 +627,26 @@ bool dfs(vector<int> &visited,int ind)
 	return false;
 }
 
-
 bool check_csg_cmp_pair()
 {
+	check_pair_count=true;
+	csg_cmp_pair_count=0;
+
+	Solve();
+
+	check_pair_count=false;
+
+	if(csg_cmp_pair_count>csg_cmp_pair_limit)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+
+	
+
 	return false;
 }
 
@@ -631,7 +683,6 @@ bool check_cycle(int p,int q)
 		return true;
 	}
 }
-
 
 bool SimplifyGraph()
 {
@@ -779,9 +830,6 @@ void Graph_Simplification_Optimizer()
 
 	return;
 }
-
-
-
 
 int main()
 {
