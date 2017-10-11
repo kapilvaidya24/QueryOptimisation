@@ -41,6 +41,13 @@ struct bit_vector
 		bit_size=graph.size();
 	};
 
+	void print_bitset()
+	{
+		cout<<arr.to_string();
+
+		return;
+	}
+
 	bool check_subset(string s)
 	{
 		bitset<128> temp(s);
@@ -287,6 +294,9 @@ int cost_calc(int a,int b)
 
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
+	cout<<s1.to_string()<<" "<<s2.to_string()<<endl;
+
+
 	int s1_ind,s2_ind;
 
 	s1_ind=dp_table[s1.to_string()];
@@ -459,6 +469,7 @@ void Solve()
 		bit_vector Bv;
 		Bv.set_size(graph.size());
 		Bv.set_lower(i);
+
 
 		EmitCsg(v);
 		EnumerateCsgRec(v,Bv);
