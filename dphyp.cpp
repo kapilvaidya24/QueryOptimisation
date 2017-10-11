@@ -636,6 +636,8 @@ bool check_csg_cmp_pair()
 
 	check_pair_count=false;
 
+	cout<<csg_cmp_pair_count<<" is_csg_cmp_pair_count"<<endl;
+
 	if(csg_cmp_pair_count>csg_cmp_pair_limit)
 	{
 		return false;
@@ -851,6 +853,10 @@ int main()
 
 		graph.edge_list.push_back(temp);
 	}
+
+	check_csg_cmp_pair();
+
+	return 0;
 
 	join_graph.directed_edges.resize(n);
 
