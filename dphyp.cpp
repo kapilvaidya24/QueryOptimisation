@@ -13,23 +13,6 @@ using namespace std;
 //global variable
 map<string,int> dp_table;
 
-struct relation_graph
-{
-
-	int GraphSize;
-	map<string,string> edges;
-
-	int size()
-	{
-		return GraphSize;
-	}
-
-};
-
-//global variable
-relation_graph graph;
-
-
 struct bit_vector
 {
 	bitset<128> arr;
@@ -38,7 +21,8 @@ struct bit_vector
 	bit_vector()
 	{
 		arr.reset();
-		bit_size=graph.size();
+		bit_size=128;
+		
 	};
 
 	void print_bitset()
@@ -48,10 +32,17 @@ struct bit_vector
 		return;
 	}
 
-	bool check_subset(string s)
+	void set_string(string s)
 	{
-		bitset<128> temp(s);
-		if((arr&temp)==temp)
+		bitset<128> t(s);
+		arr=t;
+		return;
+	}
+
+	bool check_subset(bit_vector &a)
+	{
+		// bitset<128> temp(s);
+		if((arr&a.arr)==a.arr)
 		{
 			return true;
 		}
@@ -60,10 +51,10 @@ struct bit_vector
 
 	}
 
-	bool check_intersection(string s)
+	bool check_intersection(bit_vector &a)
 	{
-		bitset<128> temp(s);
-		if((arr&temp)!=0)
+		// bitset<128> temp(s);
+		if((arr&a.arr)!=0)
 		{
 			return true;
 		}
@@ -167,6 +158,39 @@ struct bit_vector
 
 };
 
+struct edge
+{
+	bit_vector p,q;
+
+	edge(string s1,string s2)
+	{
+		p.set_string(s1);
+		q.set_string(s2);
+
+		return ;
+	}
+
+
+};
+
+struct relation_graph
+{
+
+	int GraphSize;
+	vector<edge> edge_list;
+
+	int size()
+	{
+		return GraphSize;
+	}
+
+};
+
+
+
+//global variable
+relation_graph graph;
+
 struct node
 {
 	int cost;
@@ -223,60 +247,63 @@ vector<node> node_list;
 
 bit_vector neigh(bit_vector &s,bit_vector &x)
 {
+	cout<<"neigh called"<<endl;
+	cout<<s.to_string()<<" is s "<<endl;
+	cout<<x.to_string()<<" is x "<<endl;
 	bit_vector neighbour;
 
+	cout<<"size of the map is "<<graph.edge_list.size()<<endl;
 
-	for (map<string,string>::iterator it=graph.edges.begin(); it!=graph.edges.end(); ++it)
+
+	for (int i=0;i<graph.edge_list.size();i++)
 	{
-		if(s.check_subset(it->first))
+
+		cout<<graph.edge_list[i].p.to_string()<<" is p"<<endl;
+		cout<<graph.edge_list[i].q.to_string()<<" is q"<<endl;
+
+		
+		if(s.check_subset(graph.edge_list[i].p))
 		{
-			if(!(x.check_intersection(it->second)))
+			if(!(x.check_intersection(graph.edge_list[i].q)) && !(s.check_intersection(graph.edge_list[i].q)))
 			{
-				for(int i=it->second.size()-1;i>=0;i--)
-				{
-					if(it->second[i]=='1')
-					{
-						neighbour.set_index(i);
-						break;
-					}
-				}
+				cout<<"q selected"<<endl;
+				neighbour.set_index(graph.edge_list[i].q.lowest_set_bit());
+				
+					
 			}
 		}
 
-		if(s.check_subset(it->second))
+		if(s.check_subset(graph.edge_list[i].q))
 		{
-			if(!(x.check_intersection(it->first)))
+			if(!(x.check_intersection(graph.edge_list[i].p))  && !(s.check_intersection(graph.edge_list[i].p)))
 			{
-				for(int i=it->first.size()-1;i>=0;i--)
-				{
-					if(it->first[i]=='1')
-					{
-						neighbour.set_index(i);
-						break;
-					}
-				}
+				cout<<"p selected"<<endl;
+				neighbour.set_index(graph.edge_list[i].p.lowest_set_bit());
+				
 			}
 		}
 
 	}
+
+	cout<<"neigh returned"<<endl;
  	return neighbour; 
 }
 
 bool check_edge(bit_vector &a, bit_vector &b)
 {
-	for (map<string,string>::iterator it=graph.edges.begin(); it!=graph.edges.end(); ++it)
+	for (int i=0;i<graph.edge_list.size();i++)
 	{
-		if(a.check_subset(it->first))
+		if(a.check_subset(graph.edge_list[i].p))
 		{
-			if(b.check_subset(it->second))
+			if(b.check_subset(graph.edge_list[i].q))
 			{
 				return true;
 			}
 		}
 
-		if(a.check_subset(it->second))
+		if(a.check_subset(graph.edge_list[i].q))
 		{
-			if(b.check_subset(it->first))
+			if(b.check_subset(graph.edge_list[i].p))
 			{
 				return true;
 			}
@@ -294,6 +321,7 @@ int cost_calc(int a,int b)
 
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
+	cout<<"Emitcsg cmp called"<<endl;
 	cout<<s1.to_string()<<" "<<s2.to_string()<<endl;
 
 
@@ -307,6 +335,11 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	bit_vector s;
 	s.assign(s1);
 	s.OR(s2);
+
+	cout<<"ahem"<<endl;
+	cout<<s1.to_string()<<" is s1"<<endl;
+	cout<<s2.to_string()<<" is s2"<<endl;
+	cout<<s.to_string()<<" is new node"<<endl;
 
 	if(dp_table.find(s.to_string())==dp_table.end())
 	{
@@ -331,6 +364,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 		}
 	}
 
+	cout<<"Emitcsg cmp returned"<<endl;
+
 	return ;
 
 }
@@ -338,9 +373,19 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 
 void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 {
+	cout<<endl<<"EnumerateCmpRec called"<<endl;
+
+	cout<<s1.to_string()<<" is s1"<<endl;
+	cout<<s2.to_string()<<" is s2"<<endl;
+	cout<<x.to_string()<<" is x"<<endl;
+
 	bit_vector neighbour=neigh(s2,x);
 	bit_vector n;
 	long long count=exp2(neighbour.count());
+	count--;
+
+	cout<<neighbour.to_string()<<" is neighbour"<<endl;
+	cout<<count<<" is count"<<endl;
 
 	for(int i=1;i<=count;i++)
 	{
@@ -368,26 +413,42 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 		EnumerateCmpRec(s1,temp,x);
 	}
 
+	cout<<endl<<"EnumerateCmpRec returned"<<endl;
+
 	return ;
 }
 
 
 void EmitCsg(bit_vector &s1)
 {
+	cout<<endl<<"EmitCsg called"<<endl;
+
+
+
 	bit_vector x;
 	int lsb=s1.lowest_set_bit();
 	x.reset();
 	x.assign(s1);
 	x.set_lower(lsb);
 
+
+
 	bit_vector neighbour=neigh(s1,x);
 
+	cout<<s1.to_string()<<" is s"<<endl;
+	cout<<x.to_string()<<" is x"<<endl;
+	cout<<neighbour.to_string()<<" is neigh"<<endl;
+
 	vector<int> v=neighbour.set_location();
+
+	cout<<v.size()<<" this is size of neighbour"<<endl;
 
 	for(int i=v.size()-1;i>=0;i--)
 	{
 		bit_vector s2;
 		s2.set_index(v[i]);
+
+		cout<<"in the neighbour gen loop"<<endl;
 
 		if(check_edge(s1,s2))
 		{
@@ -396,8 +457,12 @@ void EmitCsg(bit_vector &s1)
 
 		EnumerateCmpRec(s1,s2,x);
 
+		x.set_index(v[i]);
 
+		
 	}
+
+	cout<<"Emitcsg returned"<<endl<<endl;
 
 	return ;
 }
@@ -408,6 +473,7 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 	bit_vector neighbour=neigh(s1,x);
 	bit_vector n;
 	long long count=exp2(neighbour.count());
+	count--;
 
 	for(int i=1;i<=count;i++)
 	{
@@ -448,6 +514,19 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 }
 
 
+void print_map(map<string,int> a)
+{
+	map<string,int>::iterator it=a.begin();
+
+	for(it;it!=a.end();it++)
+	{
+		cout<<it->first<<" "<<endl;
+	}
+
+
+}
+
+
 void Solve()
 {
 	for(int i=0;i<graph.size();i++)
@@ -458,7 +537,10 @@ void Solve()
 
 		node_list.push_back(temp);
 		dp_table[temp.rel.to_string()]=node_list.size()-1;
+
 	}
+
+	// print_map(dp_table);
 
 	for(int i=graph.size()-1;i>=0;i--)
 	{
@@ -489,52 +571,52 @@ bool check_cycle(bitset<128> sl1,bitset<128> sr1, bitset<128> sl2,bitset<128> sr
 }
 
 
-bool SimplifyGraph()
-{
-	int M=-1;
-	map<string,string>::iterator it1,it2,j1,j2;
+// bool SimplifyGraph()
+// {
+// 	int M=-1;
+// 	map<string,string>::iterator it1,it2,j1,j2;
 
-	int c=0;
+// 	int c=0;
 
-	// bitset<128> jl1(0),jr1(0),jl2(0),jr2(0);
+// 	// bitset<128> jl1(0),jr1(0),jl2(0),jr2(0);
 	
-	for(it2=graph.edges.begin(); it2!=graph.edges.end(); ++it2)
-	{
-		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it1)
-		{
-			if(it2==it1)
-			{
-				continue;
-			}
+// 	for(it2=graph.edges.begin(); it2!=graph.edges.end(); ++it2)
+// 	{
+// 		for(it1=graph.edges.begin(); it1!=graph.edges.end(); ++it1)
+// 		{
+// 			if(it2==it1)
+// 			{
+// 				continue;
+// 			}
 
-			bitset<128> sl1(it1->first),sl2(it2->first),sr1(it1->second),sr2(it2->second);
+// 			bitset<128> sl1(it1->first),sl2(it2->first),sr1(it1->second),sr2(it2->second);
 
-			if((sl1&sl2)==sl1 || (sr1&sl2)==sr1)
-			{
-				if(((sl1|sr1)&sl2) != (sl1|sr1))
-				{
-					int b=ordering_benefit(sl1,sr1,sl2,sr2);
+// 			if((sl1&sl2)==sl1 || (sr1&sl2)==sr1)
+// 			{
+// 				if(((sl1|sr1)&sl2) != (sl1|sr1))
+// 				{
+// 					int b=ordering_benefit(sl1,sr1,sl2,sr2);
 
-					if(b>M && !(check_cycle(sl1,sr1,sl2,sr2)))
-					{
-						M=b;
-						c=1;
-						j1=it1;
-						j2=it2;
+// 					if(b>M && !(check_cycle(sl1,sr1,sl2,sr2)))
+// 					{
+// 						M=b;
+// 						c=1;
+// 						j1=it1;
+// 						j2=it2;
 
-					}
+// 					}
 
-				}
-			}
-		}
+// 				}
+// 			}
+// 		}
 
-	}
+// 	}
 
 
 
-	return true;
+// 	return true;
 
-}
+// }
 
 
 
@@ -546,13 +628,19 @@ int main()
 	int n;
 	string s1,s2;
 
-	cin>>n;
+	
 	cin>>graph.GraphSize;
+	cin>>n;
 
-	for(int i=0;i>n;i++)
+	cout<<n<<endl;
+
+	for(int i=0;i<n;i++)
 	{
 		cin>>s1>>s2;
-		graph.edges[s1]=s2;
+
+		edge temp(s1,s2);
+
+		graph.edge_list.push_back(temp);
 	}
 
 	Solve();
