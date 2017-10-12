@@ -30,6 +30,11 @@ struct bit_vector
 		
 	};
 
+	int to_int()
+	{
+		return (int)(arr.to_ulong());
+	}
+
 	void print_bitset()
 	{
 		cout<<arr.to_string();
@@ -326,6 +331,8 @@ int cost_calc(int a,int b)
 	return 1;
 }
 
+map<int,int> count_csg;
+
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
 	cout<<"Emitcsg cmp called"<<endl;
@@ -344,9 +351,13 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s.OR(s2);
 
 	cout<<"ahem"<<endl;
-	cout<<s1.to_string()<<" is s1"<<endl;
-	cout<<s2.to_string()<<" is s2"<<endl;
-	cout<<s.to_string()<<" is new node"<<endl;
+	cout<<s1.to_int()<<" is s1"<<endl;
+	cout<<s2.to_int()<<" is s2"<<endl;
+	cout<<s.to_int()<<" is new node"<<endl;
+
+	int pa=(256*s1.to_int())+s2.to_int(),qb=(256*s2.to_int())+s1.to_int();
+
+	
 
 	if(dp_table.find(s.to_string())==dp_table.end())
 	{
@@ -422,6 +433,10 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 
 	}
 
+	bit_vector t;
+	t.assign(x);
+	t.OR(neighbour);
+
 	for(int i=1;i<=count;i++)
 	{
 		neighbour.subset_enum(n,i);
@@ -434,7 +449,7 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 			return;
 		}
 
-		EnumerateCmpRec(s1,temp,x);
+		EnumerateCmpRec(s1,temp,t);
 	}
 
 	cout<<endl<<"EnumerateCmpRec returned"<<endl;
@@ -446,15 +461,11 @@ void EmitCsg(bit_vector &s1)
 {
 	cout<<endl<<"EmitCsg called"<<endl;
 
-
-
 	bit_vector x;
 	int lsb=s1.lowest_set_bit();
 	x.reset();
 	x.assign(s1);
 	x.set_lower(lsb);
-
-
 
 	bit_vector neighbour=neigh(s1,x);
 
@@ -532,7 +543,7 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 	new_x.assign(x);
 	new_x.OR(neighbour);
 
-	for(int i=1;i<count;i++)
+	for(int i=1;i<=count;i++)
 	{
 		neighbour.subset_enum(n,i);
 		bit_vector new_s1;
@@ -591,11 +602,10 @@ void Solve()
 		bit_vector Bv;
 		Bv.set_size(graph.size());
 		Bv.set_lower(i);
-
+		Bv.set_index(i);
 
 		EmitCsg(v);
 		EnumerateCsgRec(v,Bv);
-
 
 	}
 }
