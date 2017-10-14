@@ -30,9 +30,14 @@ struct bit_vector
 		
 	};
 
+	int to_int()
+	{
+		return (int)(arr.to_ulong());
+	}
+
 	void print_bitset()
 	{
-		cout<<arr.to_string();
+		// cout<<arr.to_string();
 
 		return;
 	}
@@ -255,26 +260,26 @@ vector<node> node_list;
 
 bit_vector neigh(bit_vector &s,bit_vector &x)
 {
-	cout<<"neigh called"<<endl;
-	cout<<s.to_string()<<" is s "<<endl;
-	cout<<x.to_string()<<" is x "<<endl;
+	// cout<<"neigh called"<<endl;
+	// cout<<s.to_string()<<" is s "<<endl;
+	// cout<<x.to_string()<<" is x "<<endl;
 	bit_vector neighbour;
 
-	cout<<"size of the map is "<<graph.edge_list.size()<<endl;
+	// cout<<"size of the map is "<<graph.edge_list.size()<<endl;
 
 
 	for (int i=0;i<graph.edge_list.size();i++)
 	{
 
-		cout<<graph.edge_list[i].p.to_string()<<" is p"<<endl;
-		cout<<graph.edge_list[i].q.to_string()<<" is q"<<endl;
+		// cout<<graph.edge_list[i].p.to_string()<<" is p"<<endl;
+		// cout<<graph.edge_list[i].q.to_string()<<" is q"<<endl;
 
 		
 		if(s.check_subset(graph.edge_list[i].p))
 		{
 			if(!(x.check_intersection(graph.edge_list[i].q)) && !(s.check_intersection(graph.edge_list[i].q)))
 			{
-				cout<<"q selected"<<endl;
+				// cout<<"q selected"<<endl;
 				neighbour.set_index(graph.edge_list[i].q.lowest_set_bit());
 				
 					
@@ -285,7 +290,7 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 		{
 			if(!(x.check_intersection(graph.edge_list[i].p))  && !(s.check_intersection(graph.edge_list[i].p)))
 			{
-				cout<<"p selected"<<endl;
+				// cout<<"p selected"<<endl;
 				neighbour.set_index(graph.edge_list[i].p.lowest_set_bit());
 				
 			}
@@ -293,7 +298,7 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 
 	}
 
-	cout<<"neigh returned"<<endl;
+	// cout<<"neigh returned"<<endl;
  	return neighbour; 
 }
 
@@ -326,10 +331,12 @@ int cost_calc(int a,int b)
 	return 1;
 }
 
+map<int,int> count_csg;
+
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
-	cout<<"Emitcsg cmp called"<<endl;
-	cout<<s1.to_string()<<" "<<s2.to_string()<<endl;
+	// cout<<"Emitcsg cmp called"<<endl;
+	// cout<<s1.to_string()<<" "<<s2.to_string()<<endl;
 
 
 	int s1_ind,s2_ind;
@@ -343,10 +350,14 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s.assign(s1);
 	s.OR(s2);
 
-	cout<<"ahem"<<endl;
-	cout<<s1.to_string()<<" is s1"<<endl;
-	cout<<s2.to_string()<<" is s2"<<endl;
-	cout<<s.to_string()<<" is new node"<<endl;
+	// cout<<"ahem"<<endl;
+	// cout<<s1.to_int()<<" is s1"<<endl;
+	// cout<<s2.to_int()<<" is s2"<<endl;
+	// cout<<s.to_int()<<" is new node"<<endl;
+
+	int pa=(256*s1.to_int())+s2.to_int(),qb=(256*s2.to_int())+s1.to_int();
+
+	
 
 	if(dp_table.find(s.to_string())==dp_table.end())
 	{
@@ -376,7 +387,7 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 		csg_cmp_pair_count++;
 	}
 
-	cout<<"Emitcsg cmp returned"<<endl;
+	// cout<<"Emitcsg cmp returned"<<endl;
 
 	return ;
 
@@ -384,19 +395,19 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 
 void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 {
-	cout<<endl<<"EnumerateCmpRec called"<<endl;
+	// cout<<endl<<"EnumerateCmpRec called"<<endl;
 
-	cout<<s1.to_string()<<" is s1"<<endl;
-	cout<<s2.to_string()<<" is s2"<<endl;
-	cout<<x.to_string()<<" is x"<<endl;
+	// cout<<s1.to_string()<<" is s1"<<endl;
+	// cout<<s2.to_string()<<" is s2"<<endl;
+	// cout<<x.to_string()<<" is x"<<endl;
 
 	bit_vector neighbour=neigh(s2,x);
 	bit_vector n;
 	long long count=exp2(neighbour.count());
 	count--;
 
-	cout<<neighbour.to_string()<<" is neighbour"<<endl;
-	cout<<count<<" is count"<<endl;
+	// cout<<neighbour.to_string()<<" is neighbour"<<endl;
+	// cout<<count<<" is count"<<endl;
 
 	for(int i=1;i<=count;i++)
 	{
@@ -422,6 +433,10 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 
 	}
 
+	bit_vector t;
+	t.assign(x);
+	t.OR(neighbour);
+
 	for(int i=1;i<=count;i++)
 	{
 		neighbour.subset_enum(n,i);
@@ -434,19 +449,17 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 			return;
 		}
 
-		EnumerateCmpRec(s1,temp,x);
+		EnumerateCmpRec(s1,temp,t);
 	}
 
-	cout<<endl<<"EnumerateCmpRec returned"<<endl;
+	// cout<<endl<<"EnumerateCmpRec returned"<<endl;
 
 	return ;
 }
 
 void EmitCsg(bit_vector &s1)
 {
-	cout<<endl<<"EmitCsg called"<<endl;
-
-
+	// cout<<endl<<"EmitCsg called"<<endl;
 
 	bit_vector x;
 	int lsb=s1.lowest_set_bit();
@@ -454,24 +467,22 @@ void EmitCsg(bit_vector &s1)
 	x.assign(s1);
 	x.set_lower(lsb);
 
-
-
 	bit_vector neighbour=neigh(s1,x);
 
-	cout<<s1.to_string()<<" is s"<<endl;
-	cout<<x.to_string()<<" is x"<<endl;
-	cout<<neighbour.to_string()<<" is neigh"<<endl;
+	// cout<<s1.to_string()<<" is s"<<endl;
+	// cout<<x.to_string()<<" is x"<<endl;
+	// cout<<neighbour.to_string()<<" is neigh"<<endl;
 
 	vector<int> v=neighbour.set_location();
 
-	cout<<v.size()<<" this is size of neighbour"<<endl;
+	// cout<<v.size()<<" this is size of neighbour"<<endl;
 
 	for(int i=v.size()-1;i>=0;i--)
 	{
 		bit_vector s2;
 		s2.set_index(v[i]);
 
-		cout<<"in the neighbour gen loop"<<endl;
+		// cout<<"in the neighbour gen loop"<<endl;
 
 		if(csg_cmp_pair_count>csg_cmp_pair_limit)
 		{
@@ -495,7 +506,7 @@ void EmitCsg(bit_vector &s1)
 		
 	}
 
-	cout<<"Emitcsg returned"<<endl<<endl;
+	// cout<<"Emitcsg returned"<<endl<<endl;
 
 	return ;
 }
@@ -532,7 +543,7 @@ void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 	new_x.assign(x);
 	new_x.OR(neighbour);
 
-	for(int i=1;i<count;i++)
+	for(int i=1;i<=count;i++)
 	{
 		neighbour.subset_enum(n,i);
 		bit_vector new_s1;
@@ -559,7 +570,7 @@ void print_map(map<string,int> a)
 
 	for(it;it!=a.end();it++)
 	{
-		cout<<it->first<<" "<<endl;
+		// cout<<it->first<<" "<<endl;
 	}
 
 }
@@ -591,11 +602,10 @@ void Solve()
 		bit_vector Bv;
 		Bv.set_size(graph.size());
 		Bv.set_lower(i);
-
+		Bv.set_index(i);
 
 		EmitCsg(v);
 		EnumerateCsgRec(v,Bv);
-
 
 	}
 }
@@ -635,6 +645,8 @@ bool check_csg_cmp_pair()
 	Solve();
 
 	check_pair_count=false;
+
+	cout<<csg_cmp_pair_count<<" is_csg_cmp_pair_count"<<endl;
 
 	if(csg_cmp_pair_count>csg_cmp_pair_limit)
 	{
@@ -759,6 +771,9 @@ bool SimplifyGraph()
 			update.assign(temp);
 			update.OR(graph.edge_list[j1].p);
 
+
+			// cout<<j1<<" update j1 p "<<update.to_int()<<endl;
+
 			graph.edge_list[j1].p.assign(update);
 
 			return true;
@@ -774,13 +789,12 @@ bool SimplifyGraph()
 		update.assign(temp);
 		update.OR(graph.edge_list[j1].q);
 
+		// cout<<j1<<" update j1 q "<<update.to_int()<<endl;
+
 		graph.edge_list[j1].q.assign(update);
 
 		return true;
 	}
-
-
-
 
 
 	return true;
@@ -791,6 +805,11 @@ void Graph_Simplification_Optimizer()
 {
 	vector<relation_graph> graph_vector;
 	graph_vector.push_back(graph);
+
+	for(int i=0;i<graph.edge_list.size();i++)
+	{
+		// cout<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
+	}
 	
 	while(true)
 	{
@@ -803,6 +822,24 @@ void Graph_Simplification_Optimizer()
 			break;
 		}
 	}
+
+
+	// cout<<graph_vector.size()<<" is the size of the graph_vector"<<endl;
+
+	relation_graph temp_graph;
+	temp_graph=graph_vector[graph_vector.size()-1];
+
+	for(int i=0;i<temp_graph.edge_list.size();i++)
+	{
+		// cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
+	}
+
+	graph=graph_vector[0];
+	cout<<"original"<<endl;
+	check_csg_cmp_pair();
+	graph=graph_vector[graph_vector.size()-1];
+	cout<<"final"<<endl;
+	check_csg_cmp_pair();
 
 	int start=0,end=graph_vector.size();
 
@@ -818,10 +855,12 @@ void Graph_Simplification_Optimizer()
 
 		if(check_csg_cmp_pair())
 		{
+			// cout<<"aloha1"<<endl;
 			start=mid;
 		}
 		else
 		{
+			// cout<<"aloha2"<<endl;
 			end=mid;
 		}
 	}
@@ -841,7 +880,7 @@ int main()
 	cin>>graph.GraphSize;
 	cin>>n;
 
-	cout<<n<<endl;
+	// cout<<n<<endl;
 
 	for(int i=0;i<n;i++)
 	{
@@ -851,6 +890,9 @@ int main()
 
 		graph.edge_list.push_back(temp);
 	}
+
+
+	// check_csg_cmp_pair();
 
 	join_graph.directed_edges.resize(n);
 
