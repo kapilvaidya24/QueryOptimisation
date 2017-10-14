@@ -3,7 +3,9 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <pair>
 #include <assert.h>
+#include "relationGraph.h"
 
 class ExploredNode;
 class FrontierNode;
@@ -35,7 +37,7 @@ public:
         parents.clear();
     }
 
-    ExploredNode(FrontierNode fnode)
+    ExploredNode(FrontierNode& fnode)
     {
         relationVec = fnode.getRelationVec();
         cost = fnode.getCost();
@@ -147,17 +149,20 @@ class Explored
 
     vector<ExploredNode*> getPossibleJoinAncestors(ExploredNode* node, vector<bool> targetRel, vector<bool> neighRel)
     {
-        vector<ExploredNode*> possibleNodes;
+        vector<ExploredNode*> possibleJoins;
         vector<ExploredNode*> parents = node->getParents();
         for(auto p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
-            if (p->getChilds[0] == node || !isPossibleJoinCandidate(p->getChilds[1]->getRelationVec(), targetRel, neighRel))
-            {
-                possibleNodes.push_back(p);
-                vector<ExploredNode*> possibleJoinAncestors = getPossibleJoinAncestors(p, targetRel, neighRel);
-                possibleJoins.insert(possibleJoins.begin(), possibleJoinAncestors.begin(), possibleJoinAncestors.end());
+            if (AreRelationsExclusive(p->getRelationVec(), targetRel)) {
+                if (p->getChilds[0] == node || !isPossibleJoinCandidate(p->getChilds[0]->getRelationVec(), targetRel, neighRel))
+                {
+                    possibleJoins.push_back(p);
+                    vector<ExploredNode*> possibleJoinAncestors = getPossibleJoinAncestors(p, targetRel, neighRel);
+                    possibleJoins.insert(possibleJoins.begin(), possibleJoinAncestors.begin(), possibleJoinAncestors.end());
+                }
             }
         }
+        return possibleJoins;
     }
 
 public:
@@ -172,8 +177,19 @@ public:
             leafNodes[i] = new ExploredNode(relationVec_, vector<ExploredNodes*>());
         }
 
+        // TO DO: handle case of numRelations = 1
         isTargetAchieved = false;
         TargetNode = NULL;
+    }
+
+    vector<ExploredNode*> getLeafNodes()
+    {
+        return leafNodes;
+    }
+
+    bool targetAchieved()
+    {
+        return isTargetAchieved;
     }
 
     void addNode(FrontierNode fnode)
@@ -214,6 +230,17 @@ public:
         return status;
     }
 
+    bool AreRelationsExclusive(vector<bool> rel1, vector<bool> rel2)
+    {
+        for (int i = 0, i < N; i++)
+        {
+            if(rel1[i] && rel2[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 
     vector<ExploredNode*> getPossibleJoins(vector<bool> targetRel, vector<bool> neighRel)
     {
@@ -288,7 +315,7 @@ public:
         }
     }
 
-    void addNode(vector<FrontierNode*> fnodes)
+    void addNodes(vector<FrontierNode*> fnodes)
     {
         for(auto& node: fnodes)
         {
@@ -296,3 +323,53 @@ public:
         }
     }
 };
+
+
+int main()
+{
+    int N = 5;
+    vector<pair<int, int> > edges { {0, 1}, {1, 2}, {2, 3}, {3, 4} };
+
+    RelationGraph graph(N, edges);
+    Explored explored(N);
+    Frontier frontier(N, explored->getLeafNodes());
+
+    while(!explored->targetAchieved())
+    {
+        FrontierNode* fnode = frontier->removeMinNode();
+        ExploredNode* enode = new ExploredNode(*fnode);
+
+        vector<bool> relationVec = fnode->getRelationVec();
+        
+        vector<bool> neighbourRel(N, false);
+        for (int i = 0; i < N; i++)
+        {
+            if (relationVec[i])
+            {
+                vector<bool> neighbours = graph.getNeighbourVec(i);
+                for(int i = 0; i < N; i++)
+                {
+                    neighbourRel[i] neighbourRel[i] && neighbours[i];
+                }
+            }
+        }
+        
+        vector<ExploredNode*> possibleJoins = explored.getPossibleJoins(relationVec, neighbourRel);
+        
+        int numNewNodes = possibleJoins.size()
+        vector<FrontierNode*> newFrontierNodes(numNewNodes);
+        
+        for(int i = 0; i < numNewNodes; i++)
+        {
+            vector<ExploredNode*> childs(2);
+            childs[0] = enode;
+            childs[1] = possibleJoins[i];
+            newFrontierNodes[i] = new FrontierNode(joinCost(possibleJoins[i], enode), childs);
+        }
+
+        explored.addNode(enode);
+        frontier.addNodes(newFrontierNodes);
+        delete fnode;
+    }
+    return 0;
+}
