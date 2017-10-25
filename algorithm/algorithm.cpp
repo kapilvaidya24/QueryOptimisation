@@ -1,4 +1,5 @@
 // #include <bitset>
+#include <iostream>
 #include <vector>
 #include <queue>
 #include <set>
@@ -10,26 +11,8 @@
 using namespace std;
 
 class ExploredNode;
-// {
-// public:
-//     ExploredNode(int N_, vector<bool> relationVec_, float cost_, vector<ExploredNode*> childs_);
-//     ExploredNode(FrontierNode& fnode);
-//     const int getNumRelations();
-//     const vector<bool> getRelationVec();
-//     const bool hasRelation(int relIndex);
-//     const float getCost();
-//     const vector<ExploredNode*> getParents();
-//     void addParent(ExploredNode* parent);
-// };
 
 class FrontierNode;
-// {
-//     FrontierNode(float cost_, ExploredNode* childs_[2]);
-//     const vector<bool> getRelationVec();
-//     const bool hasRelation(int relIndex);
-//     const float getCost();
-//     ExploredNode** getChilds();
-// };
 
 class ExploredNode
 {
@@ -99,7 +82,7 @@ public:
 
 class FrontierNode
 {
-    // int N;
+    int N;
     vector<bool> relationVec;
     float cost;
     vector<ExploredNode*> childs;
@@ -108,7 +91,7 @@ public:
     {
         // TO DO: Use BitSet OR fn
         // assert childs_.size() == 2
-        int N = childs_[0]->getNumRelations();
+        N = childs_[0]->getNumRelations();
         relationVec.resize(N);
         for(int i = 0; i < N; i++) {
             relationVec[i] = childs_[0]->hasRelation(i) || childs_[1]->hasRelation(i);
@@ -117,14 +100,19 @@ public:
         // Make sure childs are ordered
         if (childs_[0]->getRelationVec() < childs_[1]->getRelationVec())
         {
-            childs[0] = childs_[0];
-            childs[1] = childs_[1];
+            childs.push_back(childs_[0]);
+            childs.push_back(childs_[1]);
         }
         else
         {
-            childs[0] = childs_[1];
-            childs[1] = childs_[0];
+            childs.push_back(childs_[1]);
+            childs.push_back(childs_[0]);
         }
+    }
+
+    int getNumRelations() const
+    {
+        return N;
     }
 
     vector<bool> getRelationVec() const
@@ -150,6 +138,7 @@ public:
 
 ExploredNode::ExploredNode(FrontierNode& fnode)
 {
+    N = fnode.getNumRelations();
     relationVec = fnode.getRelationVec();
     cost = fnode.getCost();
     childs = fnode.getChilds();
@@ -181,7 +170,7 @@ class Explored
     vector<ExploredNode*> leafNodes;
     // map<vector<bool>, ExploredNode*> nodeMap;
     bool isTargetAchieved;
-    ExploredNode* TargetNode;
+    ExploredNode* targetNode;
 
     vector<ExploredNode*> getAncestralJoinCandidates(ExploredNode* node, vector<bool> targetRel, vector<bool> neighRel)
     {
@@ -216,7 +205,7 @@ public:
 
         // TO DO: handle case of numRelations = 1
         isTargetAchieved = false;
-        TargetNode = NULL;
+        targetNode = NULL;
     }
 
     vector<ExploredNode*> getLeafNodes()
@@ -227,6 +216,11 @@ public:
     bool targetAchieved()
     {
         return isTargetAchieved;
+    }
+
+    ExploredNode* getTargetNode()
+    {
+        return targetNode;
     }
 
     void addNode(ExploredNode* enode)
@@ -242,7 +236,7 @@ public:
         if (i == N)
         {
             isTargetAchieved = true;
-            TargetNode = enode;
+            targetNode = enode;
         }
         vector<ExploredNode*> childs = enode->getChilds();
 
@@ -260,7 +254,7 @@ public:
         {
             if (candidate[i] && neighRel[i])
                 status = true;
-            if(candidate[i] && targetRel[i])
+            if (candidate[i] && targetRel[i])
                 return false;
         }
         return status;
@@ -270,7 +264,7 @@ public:
     {
         for (int i = 0; i < N; i++)
         {
-            if(rel1[i] && rel2[i])
+            if (rel1[i] && rel2[i])
             {
                 return false;
             }
@@ -296,27 +290,30 @@ public:
 
 class Frontier
 {
+
     int N;
     set<FrontierNode*, FrontierNodeComparator> frontierNodes;
     map<vector<bool>, FrontierNode*> nodeMap;
 public:
-    Frontier(int N_, vector<ExploredNode*> leafNodes)
+    Frontier(int N_, vector<ExploredNode*> leafNodes, vector<pair<int, int> > edges)
     {
         N = N_;
         // assert leafNodes[i]->relationVec[i] = 1 and rest are 0
-        for (int i = 0; i <N ; i++)
-        {
-            for(int j = 0; j< N; j++)
-            {
-                float cost = leafNodes[i]->getCost() + leafNodes[j]->getCost() + joinCost(leafNodes[i], leafNodes[j]);
-                vector<ExploredNode*> childs;
-                childs.push_back(leafNodes[i]);
-                childs.push_back(leafNodes[j]);
 
-                FrontierNode* fnode = new FrontierNode(cost, childs);
-                frontierNodes.insert(fnode);
-                nodeMap[fnode->getRelationVec()] = fnode;
-            }
+        for (auto e: edges)
+        {
+            int x = e.first;
+            int y = e.second;
+
+            float cost = leafNodes[x]->getCost() + leafNodes[y]->getCost() + joinCost(leafNodes[x], leafNodes[y]);
+
+            vector<ExploredNode*> childs;
+            childs.push_back(leafNodes[x]);
+            childs.push_back(leafNodes[y]);
+
+            FrontierNode* fnode = new FrontierNode(cost, childs);
+            frontierNodes.insert(fnode);
+            nodeMap[fnode->getRelationVec()] = fnode;
         }
     }
 
@@ -368,7 +365,7 @@ int main()
 
     RelationGraph graph(N, edges);
     Explored explored(N);
-    Frontier frontier(N, explored.getLeafNodes());
+    Frontier frontier(N, explored.getLeafNodes(), graph.getEdges());
 
     while(!explored.targetAchieved())
     {
@@ -383,9 +380,9 @@ int main()
             if (relationVec[i])
             {
                 vector<bool> neighbours = graph.getNeighbourVec(i);
-                for(int i = 0; i < N; i++)
+                for (int i = 0; i < N; i++)
                 {
-                    neighbourRel[i] = neighbourRel[i] && neighbours[i];
+                    neighbourRel[i] = neighbourRel[i] || (neighbours[i] && !relationVec[i]);
                 }
             }
         }
@@ -400,12 +397,15 @@ int main()
             vector<ExploredNode*> childs(2);
             childs[0] = enode;
             childs[1] = candidates[i];
-            newFrontierNodes[i] = new FrontierNode(joinCost(candidates[i], enode), childs);
+            float cost = candidates[i]->getCost() + enode->getCost() + joinCost(candidates[i], enode);
+            newFrontierNodes[i] = new FrontierNode(cost, childs);
         }
 
         explored.addNode(enode);
         frontier.addNodes(newFrontierNodes);
         delete fnode;
     }
+
+    cout<<explored.getTargetNode()->getCost()<<endl;
     return 0;
 }
