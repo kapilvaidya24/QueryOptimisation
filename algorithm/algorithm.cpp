@@ -3,12 +3,33 @@
 #include <queue>
 #include <set>
 #include <map>
-#include <pair>
+#include <utility>
 #include <assert.h>
 #include "relationGraph.h"
 
+using namespace std;
+
 class ExploredNode;
+// {
+// public:
+//     ExploredNode(int N_, vector<bool> relationVec_, float cost_, vector<ExploredNode*> childs_);
+//     ExploredNode(FrontierNode& fnode);
+//     const int getNumRelations();
+//     const vector<bool> getRelationVec();
+//     const bool hasRelation(int relIndex);
+//     const float getCost();
+//     const vector<ExploredNode*> getParents();
+//     void addParent(ExploredNode* parent);
+// };
+
 class FrontierNode;
+// {
+//     FrontierNode(float cost_, ExploredNode* childs_[2]);
+//     const vector<bool> getRelationVec();
+//     const bool hasRelation(int relIndex);
+//     const float getCost();
+//     ExploredNode** getChilds();
+// };
 
 class ExploredNode
 {
@@ -20,48 +41,54 @@ class ExploredNode
     // bool isleaf;
 
 public:
-    ExploredNode(int N_, vector<bool> relationVec_, float cost_, vector<ExploredNodes*> childs_)
+    ExploredNode(int N_, vector<bool> relationVec_, float cost_, vector<ExploredNode*> childs_)
     {
         N = N_;
         relationVec = relationVec_;
         cost = cost_;
         
         childs = childs_;
-        if (childs.empty())
-        {
-            isLeaf = true;
-        } else
-        {
-            assert(a == b && "Each explored node should have either none or two childs");
-        }
+        // if (childs.empty())
+        // {
+        //     isLeaf = true;
+        // }
+        // else
+        // {
+        //     assert(achilds_.size() == 2 && "Each explored node should have either none or two childs");
+        // }
         parents.clear();
     }
 
-    ExploredNode(FrontierNode& fnode)
-    {
-        relationVec = fnode.getRelationVec();
-        cost = fnode.getCost();
-        childs = fnode.getChilds();
-    }
+    ExploredNode(FrontierNode& fnode);
 
-    int getNumRelations()
+    int getNumRelations() const
     {
         return N;
     }
 
-    vector<bool> getRelationVec()
+    vector<bool> getRelationVec() const
     {
         return relationVec;
     }
 
-    bool hasRelation(int relIndex)
+    bool hasRelation(int relIndex) const
     {
-        return relationVec[relIndex;]
+        return relationVec[relIndex];
     }
 
-    float getCost()
+    float getCost() const
     {
         return cost;
+    }
+
+    vector<ExploredNode*> getParents() const
+    {
+        return parents;
+    }
+
+    vector<ExploredNode*> getChilds() const
+    {
+        return childs;
     }
 
     void addParent(ExploredNode* parent)
@@ -75,19 +102,20 @@ class FrontierNode
     // int N;
     vector<bool> relationVec;
     float cost;
-    ExploredNode* childs[2];
+    vector<ExploredNode*> childs;
 public:
-    FrontierNode(float cost_, ExploredNode* childs_[2])
+    FrontierNode(float cost_, vector<ExploredNode*> childs_)
     {
         // TO DO: Use BitSet OR fn
+        // assert childs_.size() == 2
         int N = childs_[0]->getNumRelations();
         relationVec.resize(N);
         for(int i = 0; i < N; i++) {
-            relationVec[i] = childs_[0][i] || childs_[1][i];
+            relationVec[i] = childs_[0]->hasRelation(i) || childs_[1]->hasRelation(i);
         }
         cost = cost_;
         // Make sure childs are ordered
-        if (childs_[0]->getRelationVec() < childs_[1].getRelationVec())
+        if (childs_[0]->getRelationVec() < childs_[1]->getRelationVec())
         {
             childs[0] = childs_[0];
             childs[1] = childs_[1];
@@ -99,25 +127,33 @@ public:
         }
     }
 
-    vector<bool> getRelationVec()
+    vector<bool> getRelationVec() const
     {
         return relationVec;
     }
 
-    bool hasRelation(int relIndex)
+    bool hasRelation(int relIndex) const
     {
-        return relationVec[relIndex;]
+        return relationVec[relIndex];
     }
-    float getCost()
+    float getCost() const
     {
         return cost;
     }
 
-    ExploredNode** getChilds()
+    vector<ExploredNode*> getChilds()
     {
         return childs;
     }
 };
+
+
+ExploredNode::ExploredNode(FrontierNode& fnode)
+{
+    relationVec = fnode.getRelationVec();
+    cost = fnode.getCost();
+    childs = fnode.getChilds();
+}
 
 class FrontierNodeComparator
 {
@@ -129,7 +165,7 @@ public:
         {
             return a->getRelationVec() < b->getRelationVec();
         }
-        return a->getCost() < b->getCost()
+        return a->getCost() < b->getCost();
     }
 };
 
@@ -142,27 +178,28 @@ float joinCost(ExploredNode* node1, ExploredNode* node2)
 class Explored
 {
     int N;
-    vector<ExploredNodes*> leafNodes;
+    vector<ExploredNode*> leafNodes;
     // map<vector<bool>, ExploredNode*> nodeMap;
     bool isTargetAchieved;
-    ExploredNodes* TargetNode;
+    ExploredNode* TargetNode;
 
-    vector<ExploredNode*> getPossibleJoinAncestors(ExploredNode* node, vector<bool> targetRel, vector<bool> neighRel)
+    vector<ExploredNode*> getAncestralJoinCandidates(ExploredNode* node, vector<bool> targetRel, vector<bool> neighRel)
     {
-        vector<ExploredNode*> possibleJoins;
+        vector<ExploredNode*> joinCandidates;
         vector<ExploredNode*> parents = node->getParents();
-        for(auto p: parents) {
+        for (auto p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
             if (AreRelationsExclusive(p->getRelationVec(), targetRel)) {
-                if (p->getChilds[0] == node || !isPossibleJoinCandidate(p->getChilds[0]->getRelationVec(), targetRel, neighRel))
+                if (p->getChilds()[0] == node || 
+                    !isJoinCandidate(p->getChilds()[0]->getRelationVec(), targetRel, neighRel))
                 {
-                    possibleJoins.push_back(p);
-                    vector<ExploredNode*> possibleJoinAncestors = getPossibleJoinAncestors(p, targetRel, neighRel);
-                    possibleJoins.insert(possibleJoins.begin(), possibleJoinAncestors.begin(), possibleJoinAncestors.end());
+                    joinCandidates.push_back(p);
+                    vector<ExploredNode*> ancestralCandidates = getAncestralJoinCandidates(p, targetRel, neighRel);
+                    joinCandidates.insert(joinCandidates.begin(), ancestralCandidates.begin(), ancestralCandidates.end());
                 }
             }
         }
-        return possibleJoins;
+        return joinCandidates;
     }
 
 public:
@@ -174,7 +211,7 @@ public:
         {
             vector<bool> relationVec(N, false);
             relationVec[i] = true;
-            leafNodes[i] = new ExploredNode(relationVec_, vector<ExploredNodes*>());
+            leafNodes[i] = new ExploredNode(N, relationVec, 0.0, vector<ExploredNode*>());
         }
 
         // TO DO: handle case of numRelations = 1
@@ -192,12 +229,12 @@ public:
         return isTargetAchieved;
     }
 
-    void addNode(FrontierNode fnode)
+    void addNode(ExploredNode* enode)
     {
         int i;
         for (i = 0; i < N; i++)
         {
-            if (!fnode.hasRelation(i))
+            if (!enode->hasRelation(i))
             {
                 break;
             }
@@ -205,18 +242,17 @@ public:
         if (i == N)
         {
             isTargetAchieved = true;
-            TargetNode = fnode;
+            TargetNode = enode;
         }
-        ExploredNode* enode = new ExploredNode(fnode);
         vector<ExploredNode*> childs = enode->getChilds();
 
-        for (auto& c: childs)
+        for (auto& child: childs)
         {
-            childs->addParent(enode);
+            child->addParent(enode);
         }
     }
 
-    bool isPossibleJoinCandidate(vector<bool> candidate, vector<bool> targetRel, vector<bool> neighRel)
+    bool isJoinCandidate(vector<bool> candidate, vector<bool> targetRel, vector<bool> neighRel)
     {
         // assert size of all three N
         int status = false;
@@ -232,7 +268,7 @@ public:
 
     bool AreRelationsExclusive(vector<bool> rel1, vector<bool> rel2)
     {
-        for (int i = 0, i < N; i++)
+        for (int i = 0; i < N; i++)
         {
             if(rel1[i] && rel2[i])
             {
@@ -242,19 +278,19 @@ public:
         return true;
     }
 
-    vector<ExploredNode*> getPossibleJoins(vector<bool> targetRel, vector<bool> neighRel)
+    vector<ExploredNode*> getJoinCandidates(vector<bool> targetRel, vector<bool> neighRel)
     {
-        vector<ExploredNode* > possibleNodes;
+        vector<ExploredNode* > candidates;
         for (int i = 0; i < N; ++i)
         {
             if (neighRel[i])
             {
-                possibleNodes.push_back(leafNodes[i]);
-                vector<ExploredNode*> possibleJoinAncestors = getPossibleJoinAncestors(leafNodes[i], targetRel, neighRel);
-                possibleJoins.insert(possibleJoins.begin(), possibleJoinAncestors.begin(), possibleJoinAncestors.end());
+                candidates.push_back(leafNodes[i]);
+                vector<ExploredNode*> ancestralCandidates = getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel);
+                candidates.insert(candidates.begin(), ancestralCandidates.begin(), ancestralCandidates.end());
             }
         }
-        return possibleJoins;
+        return candidates;
     }
 };
 
@@ -279,14 +315,14 @@ public:
 
                 FrontierNode* fnode = new FrontierNode(cost, childs);
                 frontierNodes.insert(fnode);
-                nodeMap[rel] = fnode;
+                nodeMap[fnode->getRelationVec()] = fnode;
             }
         }
     }
 
     FrontierNode* removeMinNode()
     {
-        assert(!frontierNodes.empty() && 'Frontier should not be empty while removing min');
+        // assert(!frontierNodes.empty() && 'Frontier should not be empty while removing min');
         auto it = frontierNodes.begin();
         FrontierNode* minFNode = *it;
         frontierNodes.erase(it);
@@ -296,11 +332,11 @@ public:
 
     void addNode(FrontierNode* fnode)
     {
-        vector<bool> relationVec = fnode->getRelationVec()
+        vector<bool> relationVec = fnode->getRelationVec();
         auto it = nodeMap.find(relationVec);
         if (it == nodeMap.end())
         {
-            frontierNodes.insert(make_pair(fnode->cost, fnode));
+            frontierNodes.insert(fnode);
             nodeMap[relationVec] = fnode;
         }
         else
@@ -332,11 +368,11 @@ int main()
 
     RelationGraph graph(N, edges);
     Explored explored(N);
-    Frontier frontier(N, explored->getLeafNodes());
+    Frontier frontier(N, explored.getLeafNodes());
 
-    while(!explored->targetAchieved())
+    while(!explored.targetAchieved())
     {
-        FrontierNode* fnode = frontier->removeMinNode();
+        FrontierNode* fnode = frontier.removeMinNode();
         ExploredNode* enode = new ExploredNode(*fnode);
 
         vector<bool> relationVec = fnode->getRelationVec();
@@ -349,22 +385,22 @@ int main()
                 vector<bool> neighbours = graph.getNeighbourVec(i);
                 for(int i = 0; i < N; i++)
                 {
-                    neighbourRel[i] neighbourRel[i] && neighbours[i];
+                    neighbourRel[i] = neighbourRel[i] && neighbours[i];
                 }
             }
         }
         
-        vector<ExploredNode*> possibleJoins = explored.getPossibleJoins(relationVec, neighbourRel);
+        vector<ExploredNode*> candidates = explored.getJoinCandidates(relationVec, neighbourRel);
         
-        int numNewNodes = possibleJoins.size()
+        int numNewNodes = candidates.size();
         vector<FrontierNode*> newFrontierNodes(numNewNodes);
         
         for(int i = 0; i < numNewNodes; i++)
         {
             vector<ExploredNode*> childs(2);
             childs[0] = enode;
-            childs[1] = possibleJoins[i];
-            newFrontierNodes[i] = new FrontierNode(joinCost(possibleJoins[i], enode), childs);
+            childs[1] = candidates[i];
+            newFrontierNodes[i] = new FrontierNode(joinCost(candidates[i], enode), childs);
         }
 
         explored.addNode(enode);

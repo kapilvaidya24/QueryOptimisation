@@ -1,5 +1,7 @@
 #include <vector>
-#include <pair>
+#include <utility>
+
+using namespace std;
 
 class RelationGraph
 {
@@ -8,7 +10,7 @@ class RelationGraph
 
 public:
 
-    RelationGraph(int N_, vector<bool> adjMatrix_)
+    RelationGraph(int N_, vector<vector<bool> > adjMatrix_)
     {
         N = N_;
         adjMatrix = adjMatrix_;
@@ -22,7 +24,7 @@ public:
         {
             //assert edges[i].first < N && edges[i].second < N
             int x = edges[i].first;
-            int y = edges[i].second
+            int y = edges[i].second;
             adjMatrix[x][y] = true;
             adjMatrix[y][x] = true;
         }
