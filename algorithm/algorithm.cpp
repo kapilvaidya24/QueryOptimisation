@@ -1,4 +1,3 @@
-// #include <bitset>
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -24,7 +23,7 @@ class ExploredNode
     // bool isleaf;
 
 public:
-    ExploredNode(int N_, vector<bool> relationVec_, float cost_, vector<ExploredNode*> childs_)
+    ExploredNode(int N_, const vector<bool>& relationVec_, float cost_, const vector<ExploredNode*>& childs_)
     {
         N = N_;
         relationVec = relationVec_;
@@ -42,7 +41,7 @@ public:
         parents.clear();
     }
 
-    ExploredNode(FrontierNode& fnode);
+    ExploredNode(const FrontierNode& fnode);
 
     int getNumRelations() const
     {
@@ -87,7 +86,7 @@ class FrontierNode
     float cost;
     vector<ExploredNode*> childs;
 public:
-    FrontierNode(float cost_, vector<ExploredNode*> childs_)
+    FrontierNode(float cost_, const vector<ExploredNode*>& childs_)
     {
         // TO DO: Use BitSet OR fn
         // assert childs_.size() == 2
@@ -129,14 +128,14 @@ public:
         return cost;
     }
 
-    vector<ExploredNode*> getChilds()
+    vector<ExploredNode*> getChilds() const
     {
         return childs;
     }
 };
 
 
-ExploredNode::ExploredNode(FrontierNode& fnode)
+ExploredNode::ExploredNode(const FrontierNode& fnode)
 {
     N = fnode.getNumRelations();
     relationVec = fnode.getRelationVec();
@@ -147,7 +146,7 @@ ExploredNode::ExploredNode(FrontierNode& fnode)
 class FrontierNodeComparator
 {
 public:
-    bool operator()(const FrontierNode* a, FrontierNode* b)
+    bool operator()(const FrontierNode* a, const FrontierNode* b)
     {
 
         if (a->getCost() == b->getCost())
@@ -172,11 +171,11 @@ class Explored
     bool isTargetAchieved;
     ExploredNode* targetNode;
 
-    vector<ExploredNode*> getAncestralJoinCandidates(ExploredNode* node, vector<bool> targetRel, vector<bool> neighRel)
+    vector<ExploredNode*> getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel)
     {
         vector<ExploredNode*> joinCandidates;
         vector<ExploredNode*> parents = node->getParents();
-        for (auto p: parents) {
+        for (auto& p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
             if (AreRelationsExclusive(p->getRelationVec(), targetRel)) {
                 if (p->getChilds()[0] == node || 
@@ -246,7 +245,7 @@ public:
         }
     }
 
-    bool isJoinCandidate(vector<bool> candidate, vector<bool> targetRel, vector<bool> neighRel)
+    bool isJoinCandidate(const vector<bool>& candidate, const vector<bool>& targetRel, const vector<bool>& neighRel)
     {
         // assert size of all three N
         int status = false;
@@ -260,7 +259,7 @@ public:
         return status;
     }
 
-    bool AreRelationsExclusive(vector<bool> rel1, vector<bool> rel2)
+    bool AreRelationsExclusive(const vector<bool>& rel1, const vector<bool>& rel2)
     {
         for (int i = 0; i < N; i++)
         {
@@ -272,7 +271,7 @@ public:
         return true;
     }
 
-    vector<ExploredNode*> getJoinCandidates(vector<bool> targetRel, vector<bool> neighRel)
+    vector<ExploredNode*> getJoinCandidates(const vector<bool>& targetRel, const vector<bool>& neighRel)
     {
         vector<ExploredNode* > candidates;
         for (int i = 0; i < N; ++i)
@@ -295,12 +294,12 @@ class Frontier
     set<FrontierNode*, FrontierNodeComparator> frontierNodes;
     map<vector<bool>, FrontierNode*> nodeMap;
 public:
-    Frontier(int N_, vector<ExploredNode*> leafNodes, vector<pair<int, int> > edges)
+    Frontier(int N_, const vector<ExploredNode*>& leafNodes, const vector<pair<int, int> >& edges)
     {
         N = N_;
         // assert leafNodes[i]->relationVec[i] = 1 and rest are 0
 
-        for (auto e: edges)
+        for (auto& e: edges)
         {
             int x = e.first;
             int y = e.second;
@@ -348,7 +347,7 @@ public:
         }
     }
 
-    void addNodes(vector<FrontierNode*> fnodes)
+    void addNodes(const vector<FrontierNode*>& fnodes)
     {
         for(auto& node: fnodes)
         {
