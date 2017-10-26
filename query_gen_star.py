@@ -52,7 +52,13 @@ else:
 	n=int(sys.argv[1])
 
 centre_size=fsize()
-centre_dom_size=dsize()
+
+temp=[]
+attr_num=random.randint(1,11)
+for j in range(0,attr_num):
+	temp.append(dsize())
+
+centre_dom_size=temp
 
 size_list=[]
 sel_list=[]
@@ -60,14 +66,27 @@ dom_list=[]
 
 for i in range(0,n-1):
 	size_list.append(fsize())
-	dom_list.append(dsize())
+
+	attr_num=random.randint(1,11)
+	temp=[]
+
+	for j in range(0,attr_num):
+		temp.append(dsize())
+
+	dom_list.append(temp)
 
 for i in range(0,n-1):
 	temp=0.00
-	temp=float(centre_dom_size)
+	k=len(centre_dom_size)
+	attr_ind=random.randint(0,k-1)
 
-	if(temp<float(dom_list[i])):
-		temp=float(dom_list[i])
+	temp=float(centre_dom_size[attr_ind])
+
+	k=len(dom_list[i])
+	attr_ind=random.randint(0,k-1)
+
+	if(temp<float(dom_list[i][attr_ind])):
+		temp=float(dom_list[i][attr_ind])
 
 	sel_list.append(float(1/temp))	
 
@@ -97,7 +116,7 @@ for i in range(0,n-1):
 	print(size_list[i])
 
 
-t=float(centre_dom_size)
+t=float(centre_size)
 
 alpha=1.0
 
