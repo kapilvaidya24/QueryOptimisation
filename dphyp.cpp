@@ -351,8 +351,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s.OR(s2);
 
 	// cout<<"ahem"<<endl;
-	// cout<<s1.to_int()<<" is s1"<<endl;
-	// cout<<s2.to_int()<<" is s2"<<endl;
+	// cout<<s1.to_string()<<" is s1"<<endl;
+	// cout<<s2.to_string()<<" is s2"<<endl;
 	// cout<<s.to_int()<<" is new node"<<endl;
 
 	int pa=(256*s1.to_int())+s2.to_int(),qb=(256*s2.to_int())+s1.to_int();
@@ -617,6 +617,8 @@ int ordering_benefit(int i,int j)
 
 bool dfs(vector<int> &visited,int ind)
 {
+	visited[ind]=1;
+
 	for(int i=0;i<join_graph.directed_edges[ind].size();i++)
 	{
 		int temp=join_graph.directed_edges[ind][i];
@@ -630,9 +632,15 @@ bool dfs(vector<int> &visited,int ind)
 		}
 		else
 		{
-			return true;
+			if(visited[temp]==1)
+			{
+				return true;	
+			}
+			
 		}
 	}
+
+	visited[ind]=2;
 
 	return false;
 }
@@ -664,6 +672,7 @@ bool check_csg_cmp_pair()
 
 bool check_cycle(int p,int q)
 {
+	
 	join_graph.directed_edges[p].push_back(q);
 
 	vector<int> visited(join_graph.directed_edges.size(),0);
@@ -674,7 +683,7 @@ bool check_cycle(int p,int q)
 	{
 		if(visited[i]==0)
 		{
-			visited[i]=1;
+			
 			if(dfs(visited,i))
 			{
 				c=1;
@@ -713,7 +722,9 @@ bool SimplifyGraph()
 
 			int c=0;
 
-			if(graph.edge_list[i].p.check_subset(graph.edge_list[j].q) || graph.edge_list[i].p.check_subset(graph.edge_list[j].q))
+			// cout<<i<<" "<<j<<endl;
+
+			if(graph.edge_list[i].p.check_subset(graph.edge_list[j].q) || graph.edge_list[i].p.check_subset(graph.edge_list[j].p))
 			{
 				bit_vector temp;
 				temp.assign(graph.edge_list[j].p);
@@ -725,7 +736,7 @@ bool SimplifyGraph()
 				}
 			}
 
-			if(graph.edge_list[i].q.check_subset(graph.edge_list[j].q) || graph.edge_list[i].q.check_subset(graph.edge_list[j].q))
+			if(graph.edge_list[i].q.check_subset(graph.edge_list[j].q) || graph.edge_list[i].q.check_subset(graph.edge_list[j].p))
 			{
 				bit_vector temp;
 				temp.assign(graph.edge_list[j].p);
@@ -736,6 +747,10 @@ bool SimplifyGraph()
 					c=1;
 				}
 			}
+
+			// cout<<c<<" c val "<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
+			// cout<<c<<" c val "<<graph.edge_list[j].p.to_int()<<" "<<graph.edge_list[j].q.to_int()<<endl;
+			// cout<<graph.edge_list[i].p.check_subset(graph.edge_list[j].p)<<endl;
 
 
 			if(c==1)
@@ -754,12 +769,13 @@ bool SimplifyGraph()
 
 	if(M==-1)
 	{
+		cout<<"returned false"<<endl;
 		return false;
 	}
 
 	join_graph.directed_edges[j1].push_back(j2);
 
-	if(graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q) || graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q))
+	if(graph.edge_list[j1].p.check_subset(graph.edge_list[j2].p) || graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q))
 	{
 		bit_vector temp;
 		temp.assign(graph.edge_list[j2].p);
@@ -772,7 +788,7 @@ bool SimplifyGraph()
 			update.OR(graph.edge_list[j1].p);
 
 
-			// cout<<j1<<" update j1 p "<<update.to_int()<<endl;
+			// cout<<temp.to_int()<<" update j1 p "<<update.to_int()<<endl;
 
 			graph.edge_list[j1].p.assign(update);
 
@@ -789,7 +805,7 @@ bool SimplifyGraph()
 		update.assign(temp);
 		update.OR(graph.edge_list[j1].q);
 
-		// cout<<j1<<" update j1 q "<<update.to_int()<<endl;
+		// cout<<temp.to_int()<<" update j1 q "<<update.to_int()<<endl;
 
 		graph.edge_list[j1].q.assign(update);
 
@@ -806,16 +822,34 @@ void Graph_Simplification_Optimizer()
 	vector<relation_graph> graph_vector;
 	graph_vector.push_back(graph);
 
-	for(int i=0;i<graph.edge_list.size();i++)
-	{
-		// cout<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
-	}
+	// cout<<"here below"<<endl;
+
+	// for(int i=0;i<graph.edge_list.size();i++)
+	// {
+	// 	 cout<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
+	// }
+
+	// cout<<endl;
 	
 	while(true)
 	{
 		if(SimplifyGraph())
 		{
 			graph_vector.push_back(graph);
+
+			relation_graph temp_graph;
+			temp_graph=graph_vector[graph_vector.size()-1];
+			
+			// cout<<"here below"<<endl;
+
+			// for(int i=0;i<temp_graph.edge_list.size();i++)
+			// {
+			// 	 cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
+			// }
+
+			// cout<<endl;
+
+
 		}
 		else
 		{
@@ -824,14 +858,14 @@ void Graph_Simplification_Optimizer()
 	}
 
 
-	// cout<<graph_vector.size()<<" is the size of the graph_vector"<<endl;
+	cout<<graph_vector.size()<<" is the size of the graph_vector"<<endl;
 
 	relation_graph temp_graph;
 	temp_graph=graph_vector[graph_vector.size()-1];
 
 	for(int i=0;i<temp_graph.edge_list.size();i++)
 	{
-		// cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
+		 cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
 	}
 
 	graph=graph_vector[0];
@@ -898,7 +932,28 @@ int main()
 
 	Graph_Simplification_Optimizer();
 
-	Solve();
+	n=graph.GraphSize;
+
+	int k=0;
+	int mult=n-1,comb=1;
+	int ans=0;
+
+	for(int i=0;i<n-1;i++)
+	{
+		int temp=0;
+		temp=comb*(mult);
+
+
+
+		ans=ans+temp;
+		comb=comb*(n-1-i);
+		comb=comb/(i+1);
+		mult--;
+	}
+
+	cout<<endl<<endl<<ans<<" ans is"<<endl;
+
+	//Solve();
 
 	return 0;
 }
