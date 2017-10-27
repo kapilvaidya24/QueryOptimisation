@@ -14,6 +14,10 @@ using namespace std;
 map<string,int> dp_table;
 
 //global variable
+double page_size=8000,ts=9.5,tl=8.3,tx=2.6,fudge=1.2,mem_size=1625;
+double attr_size=16;
+
+//global variable
 bool check_pair_count=false;
 long long csg_cmp_pair_count=0;
 long long csg_cmp_pair_limit=100000;
@@ -171,6 +175,7 @@ struct bit_vector
 struct edge
 {
 	bit_vector p,q;
+	double selectivity;
 
 	edge(string s1,string s2)
 	{
@@ -208,7 +213,7 @@ relation_graph graph;
 
 struct node
 {
-	int cost;
+	double cost,num_tuples,num_attr;
 	bit_vector rel;
 	int child[2];
 
@@ -248,6 +253,50 @@ struct node
 		}
 		return ;
 	}
+
+	void set_attr_num(int a,int b)
+	{
+		num_attr=node_list[a].num_attr+node_list[b].num_attr-1;
+		return ;
+	}
+
+	void set_num_tuples(int a,int b)
+	{
+		double selectivity_final=1;
+		node r=node_list[a],s=node_list[b];
+
+		for(int i=0;i<graph.edge_list.size();i++)
+		{
+			if(r.rel.check_subset(graph.edge_list[i].p))
+			{
+				if(s.rel.check_subset(graph.edge_list[i].q))
+				{
+					selectivity_final*=graph.edge_list[i].selectivity;
+					continue;
+				}
+			}
+
+			if(s.rel.check_subset(graph.edge_list[i].p))
+			{
+				if(r.rel.check_subset(graph.edge_list[i].q))
+				{
+					selectivity_final*=graph.edge_list[i].selectivity;
+					continue;
+				}
+			}
+
+
+		}
+
+		double ans=1.0;
+		ans=r.num_tuples*selectivity_final;
+		ans*=s.num_tuples;
+
+		num_tuples=ans;
+		
+		return ;
+	}
+
 	int get_cost()
 	{
 		return cost;
@@ -326,9 +375,40 @@ bool check_edge(bit_vector &a, bit_vector &b)
 
 }
 
-int cost_calc(int a,int b)
+double cost_calc(int a,int b)
 {
-	return 1;
+	double nio,nx,ns,r_page,s_page,i1=1,i2=1,b,o;
+
+	node r=node_list[a];
+	node s=node_list[b];
+
+	if(r.num_tuples>s.num_tuples)
+	{
+		r=node_list[b];
+		s=node_list[a];
+	}
+
+	r_page=r.num_tuples*r.num_attr*attr_size;
+	r_page=r_page/page_size;
+
+	s_page=s.num_tuples*s.num_attr*attr_size;
+	s_page=s_page/page_size;
+
+	b=ceil((r_page*f)/(mem_size-i1));
+	o=floor((mem_size-i1)/b);
+
+	nx=3*(r_page+s_page);
+	nio=ceil(r_page/i1)+ceil(r_page/o)+ceil(s_page/i1)+ceil(s_page/o)+b+ceil(s_page/i2);
+	ns=2+ceil(r_page/o)+ceil(s_page/o)+2*b;
+
+	double ans=0;
+
+	ans=nx*tx+ns*ts+nio*tl;
+
+	ans=ans+r.cost;
+	ans=ans+s.cost;
+
+	return ans;
 }
 
 map<int,int> count_csg;
@@ -344,7 +424,7 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s1_ind=dp_table[s1.to_string()];
 	s2_ind=dp_table[s2.to_string()];
 
-	int cost=cost_calc(s1_ind,s2_ind);
+	double cost=cost_calc(s1_ind,s2_ind);
 
 	bit_vector s;
 	s.assign(s1);
@@ -365,6 +445,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 		temp.assign_bit_vector(s);
 		temp.assign_cost(cost);
 		temp.set_children(s1_ind,s2_ind);
+		temp.set_attr_num(s1_ind,s2_ind);
+		temp.set_num_tuples(s1_ind,s2_ind);
 
 		node_list.push_back(temp);
 
