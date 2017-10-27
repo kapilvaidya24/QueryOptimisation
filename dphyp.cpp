@@ -256,7 +256,34 @@ struct node
 
 	void set_attr_num(int a,int b)
 	{
-		num_attr=node_list[a].num_attr+node_list[b].num_attr-1;
+		double count=0;
+		node r=node_list[a],s=node_list[b];
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(r.rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(s.rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					count++;
+					continue;
+				}
+			}
+
+			if(s.rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(r.rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					count++;
+					continue;
+				}
+			}
+
+
+		}
+
+		num_attr=r.num_attr+s.num_attr-count;
+		
 		return ;
 	}
 
@@ -265,22 +292,22 @@ struct node
 		double selectivity_final=1;
 		node r=node_list[a],s=node_list[b];
 
-		for(int i=0;i<graph.edge_list.size();i++)
+		for(int i=0;i<orig_graph.edge_list.size();i++)
 		{
-			if(r.rel.check_subset(graph.edge_list[i].p))
+			if(r.rel.check_subset(orig_graph.edge_list[i].p))
 			{
-				if(s.rel.check_subset(graph.edge_list[i].q))
+				if(s.rel.check_subset(orig_graph.edge_list[i].q))
 				{
-					selectivity_final*=graph.edge_list[i].selectivity;
+					selectivity_final*=orig_graph.edge_list[i].selectivity;
 					continue;
 				}
 			}
 
-			if(s.rel.check_subset(graph.edge_list[i].p))
+			if(s.rel.check_subset(orig_graph.edge_list[i].p))
 			{
-				if(r.rel.check_subset(graph.edge_list[i].q))
+				if(r.rel.check_subset(orig_graph.edge_list[i].q))
 				{
-					selectivity_final*=graph.edge_list[i].selectivity;
+					selectivity_final*=orig_graph.edge_list[i].selectivity;
 					continue;
 				}
 			}
@@ -405,9 +432,6 @@ double cost_calc(int a,int b)
 
 	ans=nx*tx+ns*ts+nio*tl;
 
-	ans=ans+r.cost;
-	ans=ans+s.cost;
-
 	return ans;
 }
 
@@ -425,6 +449,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s2_ind=dp_table[s2.to_string()];
 
 	double cost=cost_calc(s1_ind,s2_ind);
+
+	cost=cost+node_list[s1_ind].cost+node_list[s2_ind].cost;
 
 	bit_vector s;
 	s.assign(s1);
@@ -666,7 +692,10 @@ void Solve()
 	{
 		node temp;
 		temp.rel.set_size(graph.size());
-		temp.rel.set_index(i);
+		temp.rel.set_index(graph.size()-i-1);
+		temp.assign_cost(0);
+		temp.assign_num_tuples(tuple_list[i]);
+		temp.assign_num_attr(attr_list[i]);
 
 		node_list.push_back(temp);
 		dp_table[temp.rel.to_string()]=node_list.size()-1;
@@ -986,12 +1015,17 @@ void Graph_Simplification_Optimizer()
 	return;
 }
 
+//global_variable
+relation_graph orig_graph;
+
+//global_variable
+vector<double> attr_list,tuple_list;
+
 int main()
 {
 	
 	int n;
 	string s1,s2;
-
 	
 	cin>>graph.GraphSize;
 	cin>>n;
@@ -1004,8 +1038,20 @@ int main()
 
 		edge temp(s1,s2);
 
+		cin>>temp.selectivity;
+
 		graph.edge_list.push_back(temp);
 	}
+
+	for(int i=0;i<n;i++)
+	{
+		double a,b;
+		cin>>a>>b;
+		tuple_list.push_back(a);
+		attr_list.push_back(b);
+	}
+
+	orig_graph=graph;
 
 
 	// check_csg_cmp_pair();
