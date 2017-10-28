@@ -324,6 +324,94 @@ struct node
 		return ;
 	}
 
+	void self_calc_num_attr()
+	{
+		double count=0;
+		
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					count--;
+					continue;
+				}
+			}
+		}
+
+		for(int i=0;i<orig_node_list.size();i++)
+		{
+			if(rel.check_subset(orig_node_list[i].rel))
+			{
+				count=count+orig_node_list[i].num_attr;
+			}
+		}
+
+		num_attr=count;
+		
+		return ;
+	}
+
+
+	void self_calc_num_tuple()
+	{
+		vector<double> sel,tup;
+
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					sel.push_back(orig_graph.edge_list[i].selectivity);
+					continue;
+				}
+			}
+		}
+
+		for(int i=0;i<orig_node_list.size();i++)
+		{
+			if(rel.check_subset(orig_node_list[i].rel))
+			{
+				tup.push_back(orig_node_list[i].num_tuples)
+			}
+		}
+
+		double ans=1.0;
+
+		while(true)
+		{
+			int c=0;
+			if(sel.size()!=0)
+			{
+				ans=ans*sel[sel.size()-1];
+				sel.pop_back();
+				c=1;
+			}
+
+			if(tup.size()!=0)
+			{
+				ans=ans*tup[tup.size()-1];
+				tup.pop_back();
+				c=1;
+			}
+
+			if(c==0)
+			{
+				break;
+			}
+		}
+
+
+
+		num_tuples=ans;
+		
+		return ;
+	}
+
 	int get_cost()
 	{
 		return cost;
@@ -934,22 +1022,7 @@ bool check_cycle(int p,int q)
 
 bool SimplifyGraph()
 {
-	dp_table.clear();
-	node_list.resize(0);
-
-	for(int i=0;i<graph.size();i++)
-	{
-		node temp;
-		temp.rel.set_size(graph.size());
-		temp.rel.set_index(graph.size()-i-1);
-		temp.assign_cost(0);
-		temp.assign_num_tuples(tuple_list[i]);
-		temp.assign_num_attr(attr_list[i]);
-
-		node_list.push_back(temp);
-		dp_table[temp.rel.to_string()]=node_list.size()-1;
-
-	}
+	
 
 	double M=-1;
 
@@ -1151,6 +1224,9 @@ void Graph_Simplification_Optimizer()
 //global_variable
 relation_graph orig_graph;
 
+// global variable 
+vector<node> orig_node_list;
+
 //global_variable
 vector<double> attr_list,tuple_list;
 
@@ -1185,6 +1261,21 @@ int main()
 	}
 
 	orig_graph=graph;
+
+	orig_node_list.resize(0);
+
+	for(int i=0;i<graph.size();i++)
+	{
+		node temp;
+		temp.rel.set_size(graph.size());
+		temp.rel.set_index(graph.size()-i-1);
+		temp.assign_cost(0);
+		temp.assign_num_tuples(tuple_list[i]);
+		temp.assign_num_attr(attr_list[i]);
+
+		orig_node_list.push_back(temp);
+		
+	}
 
 
 	// check_csg_cmp_pair();
