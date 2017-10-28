@@ -14,6 +14,10 @@ using namespace std;
 map<string,int> dp_table;
 
 //global variable
+double page_size=8000,ts=9.5,tl=8.3,tx=2.6,fudge=1.2,mem_size=1625;
+double attr_size=16;
+
+//global variable
 bool check_pair_count=false;
 long long csg_cmp_pair_count=0;
 long long csg_cmp_pair_limit=100000;
@@ -171,6 +175,7 @@ struct bit_vector
 struct edge
 {
 	bit_vector p,q;
+	double selectivity;
 
 	edge(string s1,string s2)
 	{
@@ -208,7 +213,7 @@ relation_graph graph;
 
 struct node
 {
-	int cost;
+	double cost,num_tuples,num_attr;
 	bit_vector rel;
 	int child[2];
 
@@ -248,6 +253,165 @@ struct node
 		}
 		return ;
 	}
+
+	void set_attr_num(int a,int b)
+	{
+		double count=0;
+		node r=node_list[a],s=node_list[b];
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(r.rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(s.rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					count++;
+					continue;
+				}
+			}
+
+			if(s.rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(r.rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					count++;
+					continue;
+				}
+			}
+
+
+		}
+
+		num_attr=r.num_attr+s.num_attr-count;
+		
+		return ;
+	}
+
+	void set_num_tuples(int a,int b)
+	{
+		double selectivity_final=1;
+		node r=node_list[a],s=node_list[b];
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(r.rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(s.rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					selectivity_final*=orig_graph.edge_list[i].selectivity;
+					continue;
+				}
+			}
+
+			if(s.rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(r.rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					selectivity_final*=orig_graph.edge_list[i].selectivity;
+					continue;
+				}
+			}
+
+
+		}
+
+		double ans=1.0;
+		ans=r.num_tuples*selectivity_final;
+		ans*=s.num_tuples;
+
+		num_tuples=ans;
+		
+		return ;
+	}
+
+	void self_calc_num_attr()
+	{
+		double count=0;
+		
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					count--;
+					continue;
+				}
+			}
+		}
+
+		for(int i=0;i<orig_node_list.size();i++)
+		{
+			if(rel.check_subset(orig_node_list[i].rel))
+			{
+				count=count+orig_node_list[i].num_attr;
+			}
+		}
+
+		num_attr=count;
+		
+		return ;
+	}
+
+
+	void self_calc_num_tuple()
+	{
+		vector<double> sel,tup;
+
+
+		for(int i=0;i<orig_graph.edge_list.size();i++)
+		{
+			if(rel.check_subset(orig_graph.edge_list[i].p))
+			{
+				if(rel.check_subset(orig_graph.edge_list[i].q))
+				{
+					sel.push_back(orig_graph.edge_list[i].selectivity);
+					continue;
+				}
+			}
+		}
+
+		for(int i=0;i<orig_node_list.size();i++)
+		{
+			if(rel.check_subset(orig_node_list[i].rel))
+			{
+				tup.push_back(orig_node_list[i].num_tuples)
+			}
+		}
+
+		double ans=1.0;
+
+		while(true)
+		{
+			int c=0;
+			if(sel.size()!=0)
+			{
+				ans=ans*sel[sel.size()-1];
+				sel.pop_back();
+				c=1;
+			}
+
+			if(tup.size()!=0)
+			{
+				ans=ans*tup[tup.size()-1];
+				tup.pop_back();
+				c=1;
+			}
+
+			if(c==0)
+			{
+				break;
+			}
+		}
+
+
+
+		num_tuples=ans;
+		
+		return ;
+	}
+
 	int get_cost()
 	{
 		return cost;
@@ -326,9 +490,37 @@ bool check_edge(bit_vector &a, bit_vector &b)
 
 }
 
-int cost_calc(int a,int b)
+double cost_calc(int a,int b)
 {
-	return 1;
+	double nio,nx,ns,r_page,s_page,i1=1,i2=1,b,o;
+
+	node r=node_list[a];
+	node s=node_list[b];
+
+	if(r.num_tuples>s.num_tuples)
+	{
+		r=node_list[b];
+		s=node_list[a];
+	}
+
+	r_page=r.num_tuples*r.num_attr*attr_size;
+	r_page=r_page/page_size;
+
+	s_page=s.num_tuples*s.num_attr*attr_size;
+	s_page=s_page/page_size;
+
+	b=ceil((r_page*f)/(mem_size-i1));
+	o=floor((mem_size-i1)/b);
+
+	nx=3*(r_page+s_page);
+	nio=ceil(r_page/i1)+ceil(r_page/o)+ceil(s_page/i1)+ceil(s_page/o)+b+ceil(s_page/i2);
+	ns=2+ceil(r_page/o)+ceil(s_page/o)+2*b;
+
+	double ans=0;
+
+	ans=nx*tx+ns*ts+nio*tl;
+
+	return ans;
 }
 
 map<int,int> count_csg;
@@ -344,15 +536,17 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s1_ind=dp_table[s1.to_string()];
 	s2_ind=dp_table[s2.to_string()];
 
-	int cost=cost_calc(s1_ind,s2_ind);
+	double cost=cost_calc(s1_ind,s2_ind);
+
+	cost=cost+node_list[s1_ind].cost+node_list[s2_ind].cost;
 
 	bit_vector s;
 	s.assign(s1);
 	s.OR(s2);
 
 	// cout<<"ahem"<<endl;
-	// cout<<s1.to_int()<<" is s1"<<endl;
-	// cout<<s2.to_int()<<" is s2"<<endl;
+	// cout<<s1.to_string()<<" is s1"<<endl;
+	// cout<<s2.to_string()<<" is s2"<<endl;
 	// cout<<s.to_int()<<" is new node"<<endl;
 
 	int pa=(256*s1.to_int())+s2.to_int(),qb=(256*s2.to_int())+s1.to_int();
@@ -365,6 +559,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 		temp.assign_bit_vector(s);
 		temp.assign_cost(cost);
 		temp.set_children(s1_ind,s2_ind);
+		temp.set_attr_num(s1_ind,s2_ind);
+		temp.set_num_tuples(s1_ind,s2_ind);
 
 		node_list.push_back(temp);
 
@@ -584,7 +780,10 @@ void Solve()
 	{
 		node temp;
 		temp.rel.set_size(graph.size());
-		temp.rel.set_index(i);
+		temp.rel.set_index(graph.size()-i-1);
+		temp.assign_cost(0);
+		temp.assign_num_tuples(tuple_list[i]);
+		temp.assign_num_attr(attr_list[i]);
 
 		node_list.push_back(temp);
 		dp_table[temp.rel.to_string()]=node_list.size()-1;
@@ -610,13 +809,131 @@ void Solve()
 	}
 }
 
-int ordering_benefit(int i,int j)
+double ordering_benefit(int i,int j)
 {
-	return 1;
+	node x,r1,r2,x_r1,x_r2;
+	bit_vector tempx,tempr1,tempr2,tempx_r1,tempx_r2;
+
+	int c=0;
+
+	if(graph.edge_list[i].p.check_subset(graph.edge_list[j].q) && c==0)
+	{
+		c=1;
+		
+		tempx.assign(graph.edge_list[i].p);
+		tempx.OR(graph.edge_list[j].q);
+		tempr1.assign(graph.edge_list[i].q);
+		tempr2.assign(graph.edge_list[j].p);
+		
+	}
+
+	if(graph.edge_list[i].p.check_subset(graph.edge_list[j].p) && c==0)
+	{
+		c=1;
+		
+		tempx.assign(graph.edge_list[i].p);
+		tempx.OR(graph.edge_list[j].p);
+		tempr1.assign(graph.edge_list[i].q);
+		tempr2.assign(graph.edge_list[j].q);
+		
+	}
+
+	if(graph.edge_list[i].q.check_subset(graph.edge_list[j].p) && c==0)
+	{
+		c=1;
+		
+		tempx.assign(graph.edge_list[i].q);
+		tempx.OR(graph.edge_list[j].p);
+		tempr1.assign(graph.edge_list[i].p);
+		tempr2.assign(graph.edge_list[j].q);
+		
+	}
+
+	if(graph.edge_list[i].q.check_subset(graph.edge_list[j].q) && c==0)
+	{
+		c=1;
+		
+		tempx.assign(graph.edge_list[i].q);
+		tempx.OR(graph.edge_list[j].q);
+		tempr1.assign(graph.edge_list[i].p);
+		tempr2.assign(graph.edge_list[j].p);
+		
+	}
+
+	tempx_r1.assign(tempx);
+	tempx_r1.OR(tempr1);
+	tempx_r2.assign(tempx);
+	tempx_r2.OR(tempr2);
+
+	cost,num_tuples,num_attr;
+
+	x.assign_bit_vector(tempx);
+	r1.assign_bit_vector(tempr1);
+	r2.assign_bit_vector(tempr2);
+	x_r1.assign_bit_vector(tempx_r1);
+	x_r2.assign_bit_vector(tempx_r2);
+
+	x.assign_cost(0);
+	r1.assign_cost(0);
+	r2.assign_cost(0);
+	x_r1.assign_cost(0);
+	x_r2.assign_cost(0);
+
+	x.self_calc_num_attr();
+	r1.self_calc_num_attr();
+	r2.self_calc_num_attr();
+	x_r1.self_calc_num_attr();
+	x_r2.self_calc_num_attr();
+
+	x.self_calc_num_tuples();
+	r1.self_calc_num_tuples();
+	r2.self_calc_num_tuples();
+	x_r1.self_calc_num_tuples();
+	x_r2.self_calc_num_tuples();
+
+	double cost_num=0,cost_den=0;
+	int size=node_list.size();
+
+	node_list.append(x);
+	node_list.append(r1);
+
+	cost_num+=cost_num+cost_calc(size,size+1);
+
+	node_list.pop_back();
+	node_list.pop_back();
+
+	node_list.append(x_r1);
+	node_list.append(r2);
+
+	cost_num+=cost_num+cost_calc(size,size+1);
+
+	node_list.pop_back();
+	node_list.pop_back();
+
+	node_list.append(x);
+	node_list.append(r2);
+
+	cost_den+=cost_den+cost_calc(size,size+1);
+
+	node_list.pop_back();
+	node_list.pop_back();
+
+	node_list.append(x_r2);
+	node_list.append(r1);
+
+	cost_den+=cost_den+cost_calc(size,size+1);
+
+	node_list.pop_back();
+	node_list.pop_back();
+
+
+	return cost_num/cost_den;
 }
 
 bool dfs(vector<int> &visited,int ind)
 {
+	visited[ind]=1;
+
 	for(int i=0;i<join_graph.directed_edges[ind].size();i++)
 	{
 		int temp=join_graph.directed_edges[ind][i];
@@ -630,9 +947,15 @@ bool dfs(vector<int> &visited,int ind)
 		}
 		else
 		{
-			return true;
+			if(visited[temp]==1)
+			{
+				return true;	
+			}
+			
 		}
 	}
+
+	visited[ind]=2;
 
 	return false;
 }
@@ -664,6 +987,7 @@ bool check_csg_cmp_pair()
 
 bool check_cycle(int p,int q)
 {
+	
 	join_graph.directed_edges[p].push_back(q);
 
 	vector<int> visited(join_graph.directed_edges.size(),0);
@@ -674,7 +998,7 @@ bool check_cycle(int p,int q)
 	{
 		if(visited[i]==0)
 		{
-			visited[i]=1;
+			
 			if(dfs(visited,i))
 			{
 				c=1;
@@ -698,7 +1022,9 @@ bool check_cycle(int p,int q)
 
 bool SimplifyGraph()
 {
-	int M=-1;
+	
+
+	double M=-1;
 
 	int j1=-1,j2=-1;
 
@@ -713,7 +1039,9 @@ bool SimplifyGraph()
 
 			int c=0;
 
-			if(graph.edge_list[i].p.check_subset(graph.edge_list[j].q) || graph.edge_list[i].p.check_subset(graph.edge_list[j].q))
+			// cout<<i<<" "<<j<<endl;
+
+			if(graph.edge_list[i].p.check_subset(graph.edge_list[j].q) || graph.edge_list[i].p.check_subset(graph.edge_list[j].p))
 			{
 				bit_vector temp;
 				temp.assign(graph.edge_list[j].p);
@@ -725,7 +1053,7 @@ bool SimplifyGraph()
 				}
 			}
 
-			if(graph.edge_list[i].q.check_subset(graph.edge_list[j].q) || graph.edge_list[i].q.check_subset(graph.edge_list[j].q))
+			if(graph.edge_list[i].q.check_subset(graph.edge_list[j].q) || graph.edge_list[i].q.check_subset(graph.edge_list[j].p))
 			{
 				bit_vector temp;
 				temp.assign(graph.edge_list[j].p);
@@ -737,10 +1065,14 @@ bool SimplifyGraph()
 				}
 			}
 
+			// cout<<c<<" c val "<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
+			// cout<<c<<" c val "<<graph.edge_list[j].p.to_int()<<" "<<graph.edge_list[j].q.to_int()<<endl;
+			// cout<<graph.edge_list[i].p.check_subset(graph.edge_list[j].p)<<endl;
+
 
 			if(c==1)
 			{
-				int b= ordering_benefit(i,j);
+				double b= ordering_benefit(i,j);
 
 				if(b>M && !(check_cycle(i,j)))
 				{
@@ -752,14 +1084,15 @@ bool SimplifyGraph()
 		}
 	}
 
-	if(M==-1)
+	if(M<0)
 	{
+		cout<<"returned false"<<endl;
 		return false;
 	}
 
 	join_graph.directed_edges[j1].push_back(j2);
 
-	if(graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q) || graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q))
+	if(graph.edge_list[j1].p.check_subset(graph.edge_list[j2].p) || graph.edge_list[j1].p.check_subset(graph.edge_list[j2].q))
 	{
 		bit_vector temp;
 		temp.assign(graph.edge_list[j2].p);
@@ -772,7 +1105,7 @@ bool SimplifyGraph()
 			update.OR(graph.edge_list[j1].p);
 
 
-			// cout<<j1<<" update j1 p "<<update.to_int()<<endl;
+			// cout<<temp.to_int()<<" update j1 p "<<update.to_int()<<endl;
 
 			graph.edge_list[j1].p.assign(update);
 
@@ -789,7 +1122,7 @@ bool SimplifyGraph()
 		update.assign(temp);
 		update.OR(graph.edge_list[j1].q);
 
-		// cout<<j1<<" update j1 q "<<update.to_int()<<endl;
+		// cout<<temp.to_int()<<" update j1 q "<<update.to_int()<<endl;
 
 		graph.edge_list[j1].q.assign(update);
 
@@ -806,16 +1139,34 @@ void Graph_Simplification_Optimizer()
 	vector<relation_graph> graph_vector;
 	graph_vector.push_back(graph);
 
-	for(int i=0;i<graph.edge_list.size();i++)
-	{
-		// cout<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
-	}
+	// cout<<"here below"<<endl;
+
+	// for(int i=0;i<graph.edge_list.size();i++)
+	// {
+	// 	 cout<<graph.edge_list[i].p.to_int()<<" "<<graph.edge_list[i].q.to_int()<<endl;
+	// }
+
+	// cout<<endl;
 	
 	while(true)
 	{
 		if(SimplifyGraph())
 		{
 			graph_vector.push_back(graph);
+
+			relation_graph temp_graph;
+			temp_graph=graph_vector[graph_vector.size()-1];
+			
+			// cout<<"here below"<<endl;
+
+			// for(int i=0;i<temp_graph.edge_list.size();i++)
+			// {
+			// 	 cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
+			// }
+
+			// cout<<endl;
+
+
 		}
 		else
 		{
@@ -824,14 +1175,14 @@ void Graph_Simplification_Optimizer()
 	}
 
 
-	// cout<<graph_vector.size()<<" is the size of the graph_vector"<<endl;
+	cout<<graph_vector.size()<<" is the size of the graph_vector"<<endl;
 
 	relation_graph temp_graph;
 	temp_graph=graph_vector[graph_vector.size()-1];
 
 	for(int i=0;i<temp_graph.edge_list.size();i++)
 	{
-		// cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
+		 cout<<temp_graph.edge_list[i].p.to_int()<<" "<<temp_graph.edge_list[i].q.to_int()<<endl;
 	}
 
 	graph=graph_vector[0];
@@ -870,12 +1221,20 @@ void Graph_Simplification_Optimizer()
 	return;
 }
 
+//global_variable
+relation_graph orig_graph;
+
+// global variable 
+vector<node> orig_node_list;
+
+//global_variable
+vector<double> attr_list,tuple_list;
+
 int main()
 {
 	
 	int n;
 	string s1,s2;
-
 	
 	cin>>graph.GraphSize;
 	cin>>n;
@@ -888,7 +1247,34 @@ int main()
 
 		edge temp(s1,s2);
 
+		cin>>temp.selectivity;
+
 		graph.edge_list.push_back(temp);
+	}
+
+	for(int i=0;i<n;i++)
+	{
+		double a,b;
+		cin>>a>>b;
+		tuple_list.push_back(a);
+		attr_list.push_back(b);
+	}
+
+	orig_graph=graph;
+
+	orig_node_list.resize(0);
+
+	for(int i=0;i<graph.size();i++)
+	{
+		node temp;
+		temp.rel.set_size(graph.size());
+		temp.rel.set_index(graph.size()-i-1);
+		temp.assign_cost(0);
+		temp.assign_num_tuples(tuple_list[i]);
+		temp.assign_num_attr(attr_list[i]);
+
+		orig_node_list.push_back(temp);
+		
 	}
 
 
@@ -898,7 +1284,28 @@ int main()
 
 	Graph_Simplification_Optimizer();
 
-	Solve();
+	n=graph.GraphSize;
+
+	int k=0;
+	int mult=n-1,comb=1;
+	int ans=0;
+
+	for(int i=0;i<n-1;i++)
+	{
+		int temp=0;
+		temp=comb*(mult);
+
+
+
+		ans=ans+temp;
+		comb=comb*(n-1-i);
+		comb=comb/(i+1);
+		mult--;
+	}
+
+	cout<<endl<<endl<<ans<<" ans is"<<endl;
+
+	//Solve();
 
 	return 0;
 }
