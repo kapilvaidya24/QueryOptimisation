@@ -28,7 +28,7 @@ public:
         N = N_;
         relationVec = relationVec_;
         cost = cost_;
-        
+
         childs = childs_;
         // if (childs.empty())
         // {
@@ -178,7 +178,7 @@ class Explored
         for (auto& p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
             if (AreRelationsExclusive(p->getRelationVec(), targetRel)) {
-                if (p->getChilds()[0] == node || 
+                if (p->getChilds()[0] == node ||
                     !isJoinCandidate(p->getChilds()[0]->getRelationVec(), targetRel, neighRel))
                 {
                     joinCandidates.push_back(p);
@@ -360,19 +360,19 @@ public:
 int main()
 {
     int N = 5;
-    vector<pair<int, int> > edges { {0, 1}, {1, 2}, {2, 3}, {3, 4} };
+    vector<pair<int, int> > edges { {0, 1}, {1, 2}, {1, 3}, {2, 4} };
 
     RelationGraph graph(N, edges);
     Explored explored(N);
     Frontier frontier(N, explored.getLeafNodes(), graph.getEdges());
 
-    while(!explored.targetAchieved())
+    while (!explored.targetAchieved())
     {
         FrontierNode* fnode = frontier.removeMinNode();
         ExploredNode* enode = new ExploredNode(*fnode);
 
         vector<bool> relationVec = fnode->getRelationVec();
-        
+
         vector<bool> neighbourRel(N, false);
         for (int i = 0; i < N; i++)
         {
@@ -385,13 +385,13 @@ int main()
                 }
             }
         }
-        
+
         vector<ExploredNode*> candidates = explored.getJoinCandidates(relationVec, neighbourRel);
-        
+
         int numNewNodes = candidates.size();
         vector<FrontierNode*> newFrontierNodes(numNewNodes);
-        
-        for(int i = 0; i < numNewNodes; i++)
+
+        for (int i = 0; i < numNewNodes; i++)
         {
             vector<ExploredNode*> childs(2);
             childs[0] = enode;
