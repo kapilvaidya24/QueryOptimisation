@@ -22,6 +22,7 @@ bool check_pair_count=false;
 long long csg_cmp_pair_count=0;
 long long csg_cmp_pair_limit=100000;
 
+
 struct bit_vector
 {
 	bitset<128> arr;
@@ -200,17 +201,6 @@ struct relation_graph
 
 };
 
-struct directed_graph
-{
-	vector<vector<int> > directed_edges;
-};
-
-//global variable
-directed_graph join_graph;
-
-//global variable
-relation_graph graph;
-
 struct node
 {
 	double cost,num_tuples,num_attr;
@@ -235,6 +225,21 @@ struct node
 		cost=c;
 		return ;
 	}
+
+	void assign_num_tuples(double n)
+	{
+		num_tuples=n;
+		return;
+	}
+
+	void assign_num_attr(double n)
+	{
+		num_attr=n;
+		return;
+	}
+
+
+
 	string to_string()
 	{
 		return rel.to_string();
@@ -254,7 +259,7 @@ struct node
 		return ;
 	}
 
-	void set_attr_num(int a,int b)
+	void set_attr_num(int a,int b,vector<node> &node_list,relation_graph &orig_graph)
 	{
 		double count=0;
 		node r=node_list[a],s=node_list[b];
@@ -287,7 +292,7 @@ struct node
 		return ;
 	}
 
-	void set_num_tuples(int a,int b)
+	void set_num_tuples(int a,int b,vector<node> &node_list,relation_graph &orig_graph)
 	{
 		double selectivity_final=1;
 		node r=node_list[a],s=node_list[b];
@@ -324,7 +329,7 @@ struct node
 		return ;
 	}
 
-	void self_calc_num_attr()
+	void self_calc_num_attr(vector<node> &orig_node_list,relation_graph &orig_graph)
 	{
 		double count=0;
 		
@@ -355,7 +360,7 @@ struct node
 	}
 
 
-	void self_calc_num_tuple()
+	void self_calc_num_tuples(vector<node> &orig_node_list,relation_graph &orig_graph)
 	{
 		vector<double> sel,tup;
 
@@ -376,7 +381,7 @@ struct node
 		{
 			if(rel.check_subset(orig_node_list[i].rel))
 			{
-				tup.push_back(orig_node_list[i].num_tuples)
+				tup.push_back(orig_node_list[i].num_tuples);
 			}
 		}
 
@@ -421,6 +426,30 @@ struct node
 
 //global variable
 vector<node> node_list;
+
+//global_variable
+relation_graph orig_graph;
+
+// global variable 
+vector<node> orig_node_list;
+
+//global_variable
+vector<double> attr_list,tuple_list;
+
+
+
+struct directed_graph
+{
+	vector<vector<int> > directed_edges;
+};
+
+//global variable
+directed_graph join_graph;
+
+//global variable
+relation_graph graph;
+
+
 
 bit_vector neigh(bit_vector &s,bit_vector &x)
 {
@@ -490,17 +519,24 @@ bool check_edge(bit_vector &a, bit_vector &b)
 
 }
 
-double cost_calc(int a,int b)
+double cost_calc(int a1,int a2)
 {
+
 	double nio,nx,ns,r_page,s_page,i1=1,i2=1,b,o;
 
-	node r=node_list[a];
-	node s=node_list[b];
+	node r=node_list[a1];
+	node s=node_list[a2];
+
+	// cout<<endl;
+	// cout<<"cost calc called "<<endl;
+
+	// cout<<r.rel.to_int()<<" "<<s.rel.to_int()<<endl;
+	// cout<<r.num_tuples<<" "<<s.num_tuples<<endl;
 
 	if(r.num_tuples>s.num_tuples)
 	{
-		r=node_list[b];
-		s=node_list[a];
+		r=node_list[a2];
+		s=node_list[a1];
 	}
 
 	r_page=r.num_tuples*r.num_attr*attr_size;
@@ -509,7 +545,7 @@ double cost_calc(int a,int b)
 	s_page=s.num_tuples*s.num_attr*attr_size;
 	s_page=s_page/page_size;
 
-	b=ceil((r_page*f)/(mem_size-i1));
+	b=ceil((r_page*fudge)/(mem_size-i1));
 	o=floor((mem_size-i1)/b);
 
 	nx=3*(r_page+s_page);
@@ -520,6 +556,8 @@ double cost_calc(int a,int b)
 
 	ans=nx*tx+ns*ts+nio*tl;
 
+	// cout<<ans<<" costcalc is returning "<<endl<<endl;
+
 	return ans;
 }
 
@@ -528,13 +566,21 @@ map<int,int> count_csg;
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
 	// cout<<"Emitcsg cmp called"<<endl;
-	// cout<<s1.to_string()<<" "<<s2.to_string()<<endl;
+	// cout<<s1.to_int()<<" "<<s2.to_int()<<endl<<endl<<endl;
 
 
 	int s1_ind,s2_ind;
 
 	s1_ind=dp_table[s1.to_string()];
 	s2_ind=dp_table[s2.to_string()];
+
+	// for(int i=0;i<node_list.size();i++)
+	// {
+	// 	cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
+	// 	cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
+	// 	cout<<node_list[i].cost<<endl;
+	// 	cout<<endl<<endl<<endl;
+	// }
 
 	double cost=cost_calc(s1_ind,s2_ind);
 
@@ -559,8 +605,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 		temp.assign_bit_vector(s);
 		temp.assign_cost(cost);
 		temp.set_children(s1_ind,s2_ind);
-		temp.set_attr_num(s1_ind,s2_ind);
-		temp.set_num_tuples(s1_ind,s2_ind);
+		temp.set_attr_num(s1_ind,s2_ind,node_list,orig_graph);
+		temp.set_num_tuples(s1_ind,s2_ind,node_list,orig_graph);
 
 		node_list.push_back(temp);
 
@@ -569,7 +615,7 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	}
 	else
 	{
-		int s_ind;
+		int s_ind=dp_table[s.to_string()];
 
 		if(cost<node_list[s_ind].get_cost())
 		{
@@ -582,6 +628,15 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	{
 		csg_cmp_pair_count++;
 	}
+
+
+	// for(int i=0;i<node_list.size();i++)
+	// {
+	// 	cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
+	// 	cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
+	// 	cout<<node_list[i].cost<<endl;
+	// 	cout<<endl<<endl<<endl;
+	// }
 
 	// cout<<"Emitcsg cmp returned"<<endl;
 
@@ -865,8 +920,6 @@ double ordering_benefit(int i,int j)
 	tempx_r2.assign(tempx);
 	tempx_r2.OR(tempr2);
 
-	cost,num_tuples,num_attr;
-
 	x.assign_bit_vector(tempx);
 	r1.assign_bit_vector(tempr1);
 	r2.assign_bit_vector(tempr2);
@@ -879,47 +932,47 @@ double ordering_benefit(int i,int j)
 	x_r1.assign_cost(0);
 	x_r2.assign_cost(0);
 
-	x.self_calc_num_attr();
-	r1.self_calc_num_attr();
-	r2.self_calc_num_attr();
-	x_r1.self_calc_num_attr();
-	x_r2.self_calc_num_attr();
+	x.self_calc_num_attr(orig_node_list,orig_graph);
+	r1.self_calc_num_attr(orig_node_list,orig_graph);
+	r2.self_calc_num_attr(orig_node_list,orig_graph);
+	x_r1.self_calc_num_attr(orig_node_list,orig_graph);
+	x_r2.self_calc_num_attr(orig_node_list,orig_graph);
 
-	x.self_calc_num_tuples();
-	r1.self_calc_num_tuples();
-	r2.self_calc_num_tuples();
-	x_r1.self_calc_num_tuples();
-	x_r2.self_calc_num_tuples();
+	x.self_calc_num_tuples(orig_node_list,orig_graph);
+	r1.self_calc_num_tuples(orig_node_list,orig_graph);
+	r2.self_calc_num_tuples(orig_node_list,orig_graph);
+	x_r1.self_calc_num_tuples(orig_node_list,orig_graph);
+	x_r2.self_calc_num_tuples(orig_node_list,orig_graph);
 
 	double cost_num=0,cost_den=0;
 	int size=node_list.size();
 
-	node_list.append(x);
-	node_list.append(r1);
+	node_list.push_back(x);
+	node_list.push_back(r1);
 
 	cost_num+=cost_num+cost_calc(size,size+1);
 
 	node_list.pop_back();
 	node_list.pop_back();
 
-	node_list.append(x_r1);
-	node_list.append(r2);
+	node_list.push_back(x_r1);
+	node_list.push_back(r2);
 
 	cost_num+=cost_num+cost_calc(size,size+1);
 
 	node_list.pop_back();
 	node_list.pop_back();
 
-	node_list.append(x);
-	node_list.append(r2);
+	node_list.push_back(x);
+	node_list.push_back(r2);
 
 	cost_den+=cost_den+cost_calc(size,size+1);
 
 	node_list.pop_back();
 	node_list.pop_back();
 
-	node_list.append(x_r2);
-	node_list.append(r1);
+	node_list.push_back(x_r2);
+	node_list.push_back(r1);
 
 	cost_den+=cost_den+cost_calc(size,size+1);
 
@@ -1221,14 +1274,7 @@ void Graph_Simplification_Optimizer()
 	return;
 }
 
-//global_variable
-relation_graph orig_graph;
 
-// global variable 
-vector<node> orig_node_list;
-
-//global_variable
-vector<double> attr_list,tuple_list;
 
 int main()
 {
@@ -1252,7 +1298,7 @@ int main()
 		graph.edge_list.push_back(temp);
 	}
 
-	for(int i=0;i<n;i++)
+	for(int i=0;i<graph.GraphSize;i++)
 	{
 		double a,b;
 		cin>>a>>b;
@@ -1282,30 +1328,24 @@ int main()
 
 	join_graph.directed_edges.resize(n);
 
-	Graph_Simplification_Optimizer();
+	Solve();
 
-	n=graph.GraphSize;
-
-	int k=0;
-	int mult=n-1,comb=1;
-	int ans=0;
-
-	for(int i=0;i<n-1;i++)
+	for(int i=0;i<node_list.size();i++)
 	{
-		int temp=0;
-		temp=comb*(mult);
-
-
-
-		ans=ans+temp;
-		comb=comb*(n-1-i);
-		comb=comb/(i+1);
-		mult--;
+		cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
+		cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
+		cout<<endl<<endl<<endl;
 	}
 
-	cout<<endl<<endl<<ans<<" ans is"<<endl;
+	// Graph_Simplification_Optimizer();
 
-	//Solve();
+	// for(int i=0;i<node_list.size();i++)
+	// {
+	// 	cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
+	// 	cout<<node_list[i].child[0]<<" childeren "<<node_list[i].child[1]<<endl;
+	// 	cout<<endl<<endl<<endl;
+	// }
 
+	
 	return 0;
 }
