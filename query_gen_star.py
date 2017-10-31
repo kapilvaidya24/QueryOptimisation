@@ -139,6 +139,14 @@ for i in range(1,n):
 
 	print(sel_list[i-1])
 
+print(centre_size);
+print(len(centre_dom_size));
+
+for i in range(1,n):
+	print(size_list[i-1])
+	print(len(dom_list[i-1]))
+
+
 # print(centre_size)
 
 # for i in range(0,n-1):
