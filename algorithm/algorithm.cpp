@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include <queue>
 #include <set>
@@ -9,37 +10,69 @@
 
 using namespace std;
 
+
+const double ATTR_SIZE = 16;
+const double FUDGE = 1.2;
+const double MEM_SIZE = 1625;
+const double PAGE_SIZE = 8000;
+const double TL = 8.3;
+const double TS = 9.5;
+const double TX = 2.6;
+const double I1 = 1;
+const double I2 = 1;
+
+
 class ExploredNode;
 
 class FrontierNode;
+
+double joinCost(const ExploredNode* a, const ExploredNode* b);
 
 class ExploredNode
 {
     int N;
     vector<bool> relationVec;
-    float cost;
+    double numTuples;
+    int numAttributes;
+    double cost;
     vector<ExploredNode*> parents;
     vector<ExploredNode*> childs;
     // bool isleaf;
 
 public:
-    ExploredNode(int N_, const vector<bool>& relationVec_, float cost_, const vector<ExploredNode*>& childs_)
-    {
-        N = N_;
-        relationVec = relationVec_;
-        cost = cost_;
 
-        childs = childs_;
-        // if (childs.empty())
-        // {
-        //     isLeaf = true;
-        // }
-        // else
-        // {
-        //     assert(achilds_.size() == 2 && "Each explored node should have either none or two childs");
-        // }
-        parents.clear();
+    ExploredNode(int index, const RelationGraph& relGraph)
+    {
+        N = relGraph.getNumRelations();
+        relationVec.resize(N, false);
+        relationVec[index] = true;
+        cost = 0.0;
+        numTuples = relGraph.getNumTuples(index);
+        numAttributes = relGraph.getNumAttributes(index);
+        childs.empty();
+        parents.empty();
     }
+    // ExploredNode(int N_, const vector<bool>& relationVec_, const vector<ExploredNode*>& childs_, const RelationGraph& relGraph)
+    // {
+    //     //assert childs.size() == 2
+
+    //     N = relGraph.getNumRelations();
+    //     relationVec = relationVec_;
+
+    //     childs = childs_;
+
+    //     cost = childs[0]->getCost() + childs[1]->getCost() + joinCost(childs[0], childs[1]);
+
+    //     numTuples = childs[0]->getNumTuples() *
+    //                 childs[1]->getNumTuples() *
+    //                 relGraph.getCrossSelectivity(childs[0]->getRelationVec(), childs[1]->getRelationVec());
+
+    //     numAttributes = childs[0]->getNumAttributes() +
+    //                 childs[1]->getNumAttributes() -
+    //                 relGraph.getNumCrossEdges(childs[0]->getRelationVec(), childs[1]->getRelationVec());
+
+    //     parents.clear();
+    // }
 
     ExploredNode(const FrontierNode& fnode);
 
@@ -58,7 +91,17 @@ public:
         return relationVec[relIndex];
     }
 
-    float getCost() const
+    int getNumTuples() const
+    {
+        return numTuples;
+    }
+
+    int getNumAttributes() const
+    {
+        return numAttributes;
+    }
+
+    double getCost() const
     {
         return cost;
     }
@@ -83,10 +126,12 @@ class FrontierNode
 {
     int N;
     vector<bool> relationVec;
-    float cost;
+    double numTuples;
+    int numAttributes;
+    double cost;
     vector<ExploredNode*> childs;
 public:
-    FrontierNode(float cost_, const vector<ExploredNode*>& childs_)
+    FrontierNode(const vector<ExploredNode*>& childs_, const RelationGraph& relGraph)
     {
         // TO DO: Use BitSet OR fn
         // assert childs_.size() == 2
@@ -95,7 +140,7 @@ public:
         for(int i = 0; i < N; i++) {
             relationVec[i] = childs_[0]->hasRelation(i) || childs_[1]->hasRelation(i);
         }
-        cost = cost_;
+
         // Make sure childs are ordered
         if (childs_[0]->getRelationVec() < childs_[1]->getRelationVec())
         {
@@ -107,6 +152,15 @@ public:
             childs.push_back(childs_[1]);
             childs.push_back(childs_[0]);
         }
+
+        numTuples = childs[0]->getNumTuples() *
+                    childs[1]->getNumTuples() *
+                    relGraph.getCrossSelectivity(childs[0]->getRelationVec(), childs[1]->getRelationVec());
+        numAttributes = childs[0]->getNumAttributes() +
+                    childs[1]->getNumAttributes() -
+                    relGraph.getNumCrossEdges(childs[0]->getRelationVec(), childs[1]->getRelationVec());
+
+        cost = childs[0]->getCost() + childs[1]->getCost() + joinCost(childs[0], childs[1]);
     }
 
     int getNumRelations() const
@@ -123,7 +177,18 @@ public:
     {
         return relationVec[relIndex];
     }
-    float getCost() const
+
+    int getNumTuples() const
+    {
+        return numTuples;
+    }
+
+    int getNumAttributes() const
+    {
+        return numAttributes;
+    }
+
+    double getCost() const
     {
         return cost;
     }
@@ -139,6 +204,8 @@ ExploredNode::ExploredNode(const FrontierNode& fnode)
 {
     N = fnode.getNumRelations();
     relationVec = fnode.getRelationVec();
+    numTuples = fnode.getNumTuples();
+    numAttributes = fnode.getNumAttributes();
     cost = fnode.getCost();
     childs = fnode.getChilds();
 }
@@ -157,11 +224,28 @@ public:
     }
 };
 
-float joinCost(ExploredNode* node1, ExploredNode* node2)
-{
-    return 1.0;
-}
 
+double joinCost(const ExploredNode* R, const ExploredNode* S)
+{
+    if (R->getNumTuples() > S->getNumTuples())
+    {
+        return joinCost(S, R);
+    }
+
+    double aPages = R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE;
+    double bPages = S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE;
+
+    double b = ceil((aPages * FUDGE) / (MEM_SIZE - I1));
+    double o = floor((MEM_SIZE - I1) / b);
+
+    double nx = 3 * (aPages + bPages);
+    double nio = ceil(aPages/I1) + ceil(aPages/o) + ceil(bPages/I1) + ceil(bPages/o) + b + ceil(bPages/I2);
+    double ns = 2 + ceil(aPages/o) + ceil(bPages/o) + 2*b;
+
+    double cost = nx*TX + ns*TS + nio*TL;
+
+    return cost;
+}
 
 class Explored
 {
@@ -191,15 +275,13 @@ class Explored
     }
 
 public:
-    Explored(int numRelations)
+    Explored(const RelationGraph& relGraph)
     {
-        N = numRelations;
+        N = relGraph.getNumRelations();
         leafNodes.resize(N);
         for (int i = 0; i < N; i++)
         {
-            vector<bool> relationVec(N, false);
-            relationVec[i] = true;
-            leafNodes[i] = new ExploredNode(N, relationVec, 0.0, vector<ExploredNode*>());
+            leafNodes[i] = new ExploredNode(i, relGraph);
         }
 
         // TO DO: handle case of numRelations = 1
@@ -289,28 +371,25 @@ public:
 
 class Frontier
 {
-
     int N;
     set<FrontierNode*, FrontierNodeComparator> frontierNodes;
     map<vector<bool>, FrontierNode*> nodeMap;
 public:
-    Frontier(int N_, const vector<ExploredNode*>& leafNodes, const vector<pair<int, int> >& edges)
+    Frontier(int N_, const vector<ExploredNode*>& leafNodes, const RelationGraph& relGraph)
     {
         N = N_;
         // assert leafNodes[i]->relationVec[i] = 1 and rest are 0
-
+        vector<pair<int, int> > edges = relGraph.getEdges();
         for (auto& e: edges)
         {
             int x = e.first;
             int y = e.second;
 
-            float cost = leafNodes[x]->getCost() + leafNodes[y]->getCost() + joinCost(leafNodes[x], leafNodes[y]);
-
             vector<ExploredNode*> childs;
             childs.push_back(leafNodes[x]);
             childs.push_back(leafNodes[y]);
 
-            FrontierNode* fnode = new FrontierNode(cost, childs);
+            FrontierNode* fnode = new FrontierNode(childs, relGraph);
             frontierNodes.insert(fnode);
             nodeMap[fnode->getRelationVec()] = fnode;
         }
@@ -359,12 +438,40 @@ public:
 
 int main()
 {
-    int N = 5;
-    vector<pair<int, int> > edges { {0, 1}, {1, 2}, {1, 3}, {2, 4} };
+    int N, E;
+    // vector<pair<int, int> > edges { {0, 1}, {1, 2}, {1, 3}, {2, 4} };
+    vector<pair<int, int> > edges;
+    vector<double> selectivities;
+    vector<int> numTuples;
+    vector<int> numAttributes;
 
-    RelationGraph graph(N, edges);
-    Explored explored(N);
-    Frontier frontier(N, explored.getLeafNodes(), graph.getEdges());
+    cin>>N>>E;
+
+    edges.resize(E);
+    selectivities.resize(E);
+    numTuples.resize(N);
+    numAttributes.resize(N);
+
+    string s;
+    int x, y;
+    for(int i = 0; i < E; i++)
+    {
+        cin>>s;
+        for (x = 0; s[x] != '1'; x++);
+        cin>>s;
+        for (y = 0; s[y] != '1'; y++);
+
+        edges[i] = make_pair(x, y);
+        cin>>selectivities[i];
+    }
+    for(int i = 0; i < N; i++)
+    {
+        cin>>numTuples[i]>>numAttributes[i];
+    }
+
+    RelationGraph graph(N, edges, selectivities, numTuples, numAttributes);
+    Explored explored(graph);
+    Frontier frontier(N, explored.getLeafNodes(), graph);
 
     while (!explored.targetAchieved())
     {
@@ -396,8 +503,7 @@ int main()
             vector<ExploredNode*> childs(2);
             childs[0] = enode;
             childs[1] = candidates[i];
-            float cost = candidates[i]->getCost() + enode->getCost() + joinCost(candidates[i], enode);
-            newFrontierNodes[i] = new FrontierNode(cost, childs);
+            newFrontierNodes[i] = new FrontierNode(childs, graph);
         }
 
         explored.addNode(enode);
