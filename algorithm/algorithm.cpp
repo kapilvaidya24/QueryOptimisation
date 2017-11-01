@@ -91,7 +91,7 @@ public:
         return relationVec[relIndex];
     }
 
-    int getNumTuples() const
+    double getNumTuples() const
     {
         return numTuples;
     }
@@ -178,7 +178,7 @@ public:
         return relationVec[relIndex];
     }
 
-    int getNumTuples() const
+    double getNumTuples() const
     {
         return numTuples;
     }
@@ -224,16 +224,16 @@ public:
     }
 };
 
-
 double joinCost(const ExploredNode* R, const ExploredNode* S)
 {
     if (R->getNumTuples() > S->getNumTuples())
     {
         return joinCost(S, R);
     }
+    auto newEdge = make_pair(R->getRelationVec(), S->getRelationVec());
 
-    double aPages = R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE;
-    double bPages = S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE;
+    double aPages = ceil(R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
+    double bPages = ceil(S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
 
     double b = ceil((aPages * FUDGE) / (MEM_SIZE - I1));
     double o = floor((MEM_SIZE - I1) / b);
@@ -244,6 +244,11 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
 
     double cost = nx*TX + ns*TS + nio*TL;
 
+    // cout<<boolString(R->getRelationVec())<<"\t"<<R->getNumTuples()<<"\t"<<R->getNumAttributes()<<endl;;
+    // cout<<boolString(S->getRelationVec())<<"\t"<<S->getNumTuples()<<"\t"<<S->getNumAttributes()<<endl;;
+    // cout<<cost<<endl<<endl;
+    // cout<<fnode->getCost()<<" "<<fnode->getNumTuples()<<" "<<fnode->getNumAttributes()<<endl;
+
     return cost;
 }
 
@@ -251,7 +256,8 @@ class Explored
 {
     int N;
     vector<ExploredNode*> leafNodes;
-    // map<vector<bool>, ExploredNode*> nodeMap;
+    map<vector<bool>, ExploredNode*> nodeMap;
+    // TO DO: see if need to store tragets Node for efficiency?
     bool isTargetAchieved;
     ExploredNode* targetNode;
 
@@ -265,7 +271,10 @@ class Explored
                 if (p->getChilds()[0] == node ||
                     !isJoinCandidate(p->getChilds()[0]->getRelationVec(), targetRel, neighRel))
                 {
-                    joinCandidates.push_back(p);
+                    if (!isResultNodeExplored(targetRel, p->getRelationVec()))
+                    {
+                        joinCandidates.push_back(p);
+                    }
                     vector<ExploredNode*> ancestralCandidates = getAncestralJoinCandidates(p, targetRel, neighRel);
                     joinCandidates.insert(joinCandidates.begin(), ancestralCandidates.begin(), ancestralCandidates.end());
                 }
@@ -282,6 +291,7 @@ public:
         for (int i = 0; i < N; i++)
         {
             leafNodes[i] = new ExploredNode(i, relGraph);
+            nodeMap[leafNodes[i]->getRelationVec()] = leafNodes[i];
         }
 
         // TO DO: handle case of numRelations = 1
@@ -304,6 +314,20 @@ public:
         return targetNode;
     }
 
+    bool isNodeExplored(const vector<bool> & vec)
+    {
+        return (nodeMap.count(vec) > 0);
+    }
+
+    bool isResultNodeExplored(const vector<bool>& a, const vector<bool>& b)
+    {
+        vector<bool> result(N, false);
+        for (int i = 0; i < N; i++)
+        {
+            result[i] = a[i] || b[i];
+        }
+        return (nodeMap.count(result) > 0);
+    }
     void addNode(ExploredNode* enode)
     {
         int i;
@@ -325,6 +349,8 @@ public:
         {
             child->addParent(enode);
         }
+
+        nodeMap[enode->getRelationVec()] = enode;
     }
 
     bool isJoinCandidate(const vector<bool>& candidate, const vector<bool>& targetRel, const vector<bool>& neighRel)
@@ -353,6 +379,9 @@ public:
         return true;
     }
 
+    // return the nodes that can be joined with node targetRel i.e.
+    // nodes that don't have any relation which is present in targetRel but have at least one rel which is in neighRel
+    // Also don't return nodes such that joining targetRel and the node results in a node which is already there in explored
     vector<ExploredNode*> getJoinCandidates(const vector<bool>& targetRel, const vector<bool>& neighRel)
     {
         vector<ExploredNode* > candidates;
@@ -360,7 +389,10 @@ public:
         {
             if (neighRel[i])
             {
-                candidates.push_back(leafNodes[i]);
+                if (!isResultNodeExplored(targetRel, leafNodes[i]->getRelationVec()))
+                {
+                    candidates.push_back(leafNodes[i]);
+                }
                 vector<ExploredNode*> ancestralCandidates = getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel);
                 candidates.insert(candidates.begin(), ancestralCandidates.begin(), ancestralCandidates.end());
             }
@@ -402,6 +434,7 @@ public:
         FrontierNode* minFNode = *it;
         frontierNodes.erase(it);
         nodeMap.erase(minFNode->getRelationVec());
+        // cout<<"Removing node "<<boolString(minFNode->getRelationVec())<<endl;
         return minFNode;
     }
 
@@ -413,6 +446,7 @@ public:
         {
             frontierNodes.insert(fnode);
             nodeMap[relationVec] = fnode;
+            // cout<<"Adding node "<<boolString(relationVec)<<endl;
         }
         else
         {
@@ -422,6 +456,7 @@ public:
                 frontierNodes.erase(prevNode);
                 frontierNodes.insert(fnode);
                 nodeMap[relationVec] = fnode;
+                // cout<<"Updating node "<<boolString(relationVec)<<endl;
             }
         }
     }

@@ -1,8 +1,22 @@
 #include <vector>
 #include <utility>
+#include <string>
 
 using namespace std;
 
+
+string boolString(const vector<bool> & a)
+{
+    string str = "";
+    for(int i = 0; i < a.size(); i++)
+    {
+        if (a[i])
+            str += '1';
+        else
+            str += '0';
+    }
+    return str;
+}
 // RelationGraph represnts an undirected graph and does not support self-edges
 // TO DO: consider using adjacency lists
 class RelationGraph
@@ -153,6 +167,8 @@ public:
                 }
             }
         }
+
+        // cout<<boolString(a)<<"\t"<<boolString(b)<<"\t"<<selectivity<<endl;
         return selectivity;
     }
 
