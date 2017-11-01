@@ -20,7 +20,7 @@ double attr_size=16;
 //global variable
 bool check_pair_count=false;
 long long csg_cmp_pair_count=0;
-long long csg_cmp_pair_limit=100000;
+long long csg_cmp_pair_limit=10000000;
 
 
 struct bit_vector
@@ -220,7 +220,7 @@ struct node
 
 		return ;
 	}
-	void assign_cost(int c)
+	void assign_cost(double c)
 	{
 		cost=c;
 		return ;
@@ -527,6 +527,8 @@ double cost_calc(int a1,int a2)
 	node r=node_list[a1];
 	node s=node_list[a2];
 
+	// cout<<"cost_calc"<<endl;
+
 	// cout<<endl;
 	// cout<<"cost calc called "<<endl;
 
@@ -540,10 +542,10 @@ double cost_calc(int a1,int a2)
 	}
 
 	r_page=r.num_tuples*r.num_attr*attr_size;
-	r_page=r_page/page_size;
+	r_page=ceil(r_page/page_size);
 
 	s_page=s.num_tuples*s.num_attr*attr_size;
-	s_page=s_page/page_size;
+	s_page=ceil(s_page/page_size);
 
 	b=ceil((r_page*fudge)/(mem_size-i1));
 	o=floor((mem_size-i1)/b);
@@ -563,11 +565,30 @@ double cost_calc(int a1,int a2)
 
 map<int,int> count_csg;
 
+bool func_check_limit()
+{
+	if(csg_cmp_pair_count>csg_cmp_pair_limit)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 {
 	// cout<<"Emitcsg cmp called"<<endl;
 	// cout<<s1.to_int()<<" "<<s2.to_int()<<endl<<endl<<endl;
 
+
+	// cout<<"emitcsg"<<endl;
+
+	if(func_check_limit())
+	{
+		return ;
+	}
 
 	int s1_ind,s2_ind;
 
@@ -590,6 +611,9 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	s.assign(s1);
 	s.OR(s2);
 
+	// cout<<s1.to_int()<<" "<<s2.to_int()<<" "<<s.to_int()<<endl;
+
+
 	// cout<<"ahem"<<endl;
 	// cout<<s1.to_string()<<" is s1"<<endl;
 	// cout<<s2.to_string()<<" is s2"<<endl;
@@ -601,6 +625,7 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 
 	if(dp_table.find(s.to_string())==dp_table.end())
 	{
+
 		node temp;
 		temp.assign_bit_vector(s);
 		temp.assign_cost(cost);
@@ -619,6 +644,7 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 
 		if(cost<node_list[s_ind].get_cost())
 		{
+			
 			node_list[s_ind].assign_cost(cost);
 			node_list[s_ind].set_children(s1_ind,s2_ind);
 		}
@@ -627,6 +653,7 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	if(check_pair_count)
 	{
 		csg_cmp_pair_count++;
+		// cout<<csg_cmp_pair_count<<endl;
 	}
 
 
@@ -644,6 +671,8 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 
 }
 
+
+
 void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 {
 	// cout<<endl<<"EnumerateCmpRec called"<<endl;
@@ -651,6 +680,11 @@ void EnumerateCmpRec(bit_vector &s1, bit_vector &s2, bit_vector &x)
 	// cout<<s1.to_string()<<" is s1"<<endl;
 	// cout<<s2.to_string()<<" is s2"<<endl;
 	// cout<<x.to_string()<<" is x"<<endl;
+
+	if(func_check_limit())
+	{
+		return ;
+	}	
 
 	bit_vector neighbour=neigh(s2,x);
 	bit_vector n;
@@ -712,6 +746,11 @@ void EmitCsg(bit_vector &s1)
 {
 	// cout<<endl<<"EmitCsg called"<<endl;
 
+	if(func_check_limit())
+	{
+		return ;
+	}
+
 	bit_vector x;
 	int lsb=s1.lowest_set_bit();
 	x.reset();
@@ -764,6 +803,12 @@ void EmitCsg(bit_vector &s1)
 
 void EnumerateCsgRec(bit_vector &s1, bit_vector &x)
 {
+
+	if(func_check_limit())
+	{
+		return ;
+	}
+
 	bit_vector neighbour=neigh(s1,x);
 	bit_vector n;
 	long long count=exp2(neighbour.count());
@@ -1328,11 +1373,26 @@ int main()
 
 	join_graph.directed_edges.resize(n);
 
-	Solve();
+	check_csg_cmp_pair();
+
+	double ans=1.0;
+
+	for(int i=0;i<n+1;i++)
+	{
+		ans*=2;
+	}
+
+	ans=ans-1;
 
 	for(int i=0;i<node_list.size();i++)
 	{
+		if(node_list[i].rel.to_int()!=ans)
+		{
+			continue;
+		}
+
 		cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
+		cout<<node_list[i].cost<<" is the cost "<<endl;
 		cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
 		cout<<endl<<endl<<endl;
 	}
