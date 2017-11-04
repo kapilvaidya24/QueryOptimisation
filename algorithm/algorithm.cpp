@@ -400,6 +400,11 @@ public:
         }
         return candidates;
     }
+
+    int size()
+    {
+        return nodeMap.size();
+    }
 };
 
 class Frontier
@@ -469,12 +474,18 @@ public:
             addNode(node);
         }
     }
+
+    int size()
+    {
+        return frontierNodes.size();
+    }
 };
 
 
 int main()
 {
     int N, E;
+    int nodeCount = 0;
     // vector<pair<int, int> > edges { {0, 1}, {1, 2}, {1, 3}, {2, 4} };
     vector<pair<int, int> > edges;
     vector<double> selectivities;
@@ -508,6 +519,8 @@ int main()
     RelationGraph graph(N, edges, selectivities, numTuples, numAttributes);
     Explored explored(graph);
     Frontier frontier(N, explored.getLeafNodes(), graph);
+
+    nodeCount = frontier.size();
 
     while (!explored.targetAchieved())
     {
@@ -544,9 +557,10 @@ int main()
 
         explored.addNode(enode);
         frontier.addNodes(newFrontierNodes);
+        nodeCount += newFrontierNodes.size();
         delete fnode;
     }
 
-    cout<<explored.getTargetNode()->getCost()<<endl;
+    cout<<explored.getTargetNode()->getCost()<<" "<<nodeCount<<" "<<explored.size()<<endl;
     return 0;
 }
