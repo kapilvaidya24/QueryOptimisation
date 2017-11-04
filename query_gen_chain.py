@@ -14,6 +14,7 @@ import math
 # 100-500 35%
 # 500-1,000 15%
 
+
 def fsize():
 	t=random.randint(1,101)	
 
@@ -48,25 +49,27 @@ n=1
 s=1
 
 if(len(sys.argv)<3):
-	print("please give seed and size of star query as input")
+	print("please give seed and size of chain query as input")
 else:
 	s=int(sys.argv[1])
 	n=int(sys.argv[2])
 	
 random.seed(s)
 
-centre_size=fsize()
-
-temp=[]
-attr_num=n-1
-for j in range(0,attr_num):
-	temp.append(dsize())
-
-centre_dom_size=temp
 
 size_list=[]
 sel_list=[]
 dom_list=[]
+
+
+size_list.append(fsize())
+
+temp=[]
+attr_num=random.randint(1,11)
+for j in range(0,attr_num):
+	temp.append(dsize())
+
+dom_list.append(temp)
 
 for i in range(0,n-1):
 	size_list.append(fsize())
