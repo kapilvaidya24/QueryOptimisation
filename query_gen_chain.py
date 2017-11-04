@@ -82,12 +82,12 @@ for i in range(0,n-1):
 
 	dom_list.append(temp)
 
-for i in range(0,n-1):
+for i in range(1,n):
 	temp=0.00
-	k=len(centre_dom_size)
-	attr_ind=i
+	k=len(dom_list[i-1])
+	attr_ind=random.randint(0,k-1)
 
-	temp=float(centre_dom_size[attr_ind])
+	temp=float(dom_list[i-1][attr_ind])
 
 	k=len(dom_list[i])
 	attr_ind=random.randint(0,k-1)
@@ -101,12 +101,12 @@ for i in range(0,n-1):
 
 
 
-t=float(centre_size)
+t=float(size_list[0])
 
 alpha=1.0
 
 for i in range(0,n-1):
-	t=t*float(size_list[i])
+	t=t*float(size_list[i+1])
 	t=t*float(sel_list[i])
 
 # print(str(t)+" is value of t")
@@ -132,10 +132,13 @@ print(n)
 print(n-1)
 
 for i in range(1,n):
-	s="1"
-	for j in range(1,n):
-		s=s+"0"
-	print(s)
+	s=""	
+	for j in range(1,i):
+		s+="0"
+	s+="1"
+	for j in range(i,n):
+		s+="0"
+	print(s)		
 	s="0"	
 	for j in range(1,i):
 		s+="0"
@@ -146,10 +149,8 @@ for i in range(1,n):
 
 	print(sel_list[i-1])
 
-print(centre_size);
-print(len(centre_dom_size));
 
-for i in range(1,n):
+for i in range(1,n+1):
 	print(size_list[i-1])
 	print(len(dom_list[i-1]))
 
