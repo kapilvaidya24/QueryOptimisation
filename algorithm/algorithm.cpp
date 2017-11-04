@@ -4,6 +4,7 @@
 #include <queue>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <utility>
 #include <assert.h>
 #include "relationGraph.h"
@@ -256,7 +257,7 @@ class Explored
 {
     int N;
     vector<ExploredNode*> leafNodes;
-    map<vector<bool>, ExploredNode*> nodeMap;
+    unordered_map<vector<bool>, ExploredNode*> nodeMap;
     // TO DO: see if need to store tragets Node for efficiency?
     bool isTargetAchieved;
     ExploredNode* targetNode;
@@ -405,7 +406,7 @@ class Frontier
 {
     int N;
     set<FrontierNode*, FrontierNodeComparator> frontierNodes;
-    map<vector<bool>, FrontierNode*> nodeMap;
+    unordered_map<vector<bool>, FrontierNode*> nodeMap;
 public:
     Frontier(int N_, const vector<ExploredNode*>& leafNodes, const RelationGraph& relGraph)
     {
