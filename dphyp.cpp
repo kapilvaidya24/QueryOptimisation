@@ -1067,7 +1067,7 @@ bool check_csg_cmp_pair()
 
 	check_pair_count=false;
 
-	cout<<csg_cmp_pair_count<<" is_csg_cmp_pair_count"<<endl;
+	// cout<<csg_cmp_pair_count<<" is_csg_cmp_pair_count"<<endl;
 
 	if(csg_cmp_pair_count>csg_cmp_pair_limit)
 	{
@@ -1391,10 +1391,10 @@ int main()
 			continue;
 		}
 
-		cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
-		cout<<node_list[i].cost<<" is the cost "<<endl;
-		cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
-		cout<<endl<<endl<<endl;
+		// cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
+		cout<<node_list[i].cost<<" "<<csg_cmp_pair_count<<" "<<node_list.size()<<endl;
+		//cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
+		//cout<<endl<<endl<<endl;
 	}
 
 	// Graph_Simplification_Optimizer();
