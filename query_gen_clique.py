@@ -93,7 +93,7 @@ for i in range(0,n):
 		if(temp<float(dom_list[i][attr_ind])):
 			temp=float(dom_list[i][attr_ind])
 
-		sel_list.append(float(1/temp))	
+		sel_list.append(float(1/temp)*1000)	
 
 
 
