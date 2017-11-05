@@ -1377,12 +1377,13 @@ int main()
 
 	double ans=1.0;
 
-	for(int i=0;i<n+1;i++)
+	for(int i=0;i<graph.GraphSize;i++)
 	{
 		ans*=2;
 	}
 
 	ans=ans-1;
+	// cout<<ans<<endl;
 
 	for(int i=0;i<node_list.size();i++)
 	{
@@ -1393,8 +1394,8 @@ int main()
 
 		// cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
 		cout<<node_list[i].cost<<" "<<csg_cmp_pair_count<<" "<<node_list.size()<<endl;
-		//cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
-		//cout<<endl<<endl<<endl;
+		// cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
+		// cout<<endl<<endl<<endl;
 	}
 
 	// Graph_Simplification_Optimizer();
