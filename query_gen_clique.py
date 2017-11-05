@@ -116,7 +116,7 @@ for i in range(0,len(sel_list)):
 	t=t*float(sel_list[i])	
 
 
-print(str(t)+" is value of t")
+# print(str(t)+" is value of t")
 
 if(t<1000000 or t>1000000000):
 	t=t/10000000
