@@ -67,7 +67,7 @@ dom_list=[]
 for i in range(0,n):
 	size_list.append(fsize())
 
-	attr_num=random.randint(1,11)
+	attr_num=random.randint(n+1,n+11)
 	temp=[]
 
 	for j in range(0,attr_num):
