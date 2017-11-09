@@ -193,7 +193,7 @@ struct edge
 
 };
 
-struct edge_opt()
+
 
 struct relation_graph
 {
@@ -1334,15 +1334,16 @@ void Graph_Simplification_Optimizer()
 
 bool is_comp=false;
 bit_vector s_org;
+vector<bit_vector> edge_list_opt;
 
 
-void neigh_opt(bit_vector &S)
+bit_vector neigh_opt(bit_vector &S)
 {
 	bit_vector ans;
 
-	for(int i=0;i<bit_size;i++)
+	for(int i=0;i<S.bit_size;i++)
 	{
-		if(S[i]==1)
+		if(S.arr[i]==1)
 		{
 			ans.OR(edge_list_opt[i]);
 		}
@@ -1351,9 +1352,12 @@ void neigh_opt(bit_vector &S)
 	return ans;
 }
 
+void EnumerateCmp_opt(bit_vector &S);
+
+
 void EnumerateCsgRec_opt(bit_vector &S,bit_vector &X)
 {
-	bit_vector neighbour=opt_neigh(S);
+	bit_vector neighbour=neigh_opt(S);
 	neighbour.DIFF(X);
 
 	long long count=exp2(neighbour.count());
@@ -1398,7 +1402,7 @@ void EnumerateCsgRec_opt(bit_vector &S,bit_vector &X)
 		temp.assign(S);
 		temp.OR(n);
 		
-		EnumerateCsgRec(G,temp,x_n);
+		EnumerateCsgRec(temp,x_n);
 
 	}
 
@@ -1433,7 +1437,7 @@ void EnumerateCmp_opt(bit_vector &S)
 
 }
 
-vector<bit_vector> edge_list_opt;
+
 
 int main()
 {
@@ -1454,10 +1458,14 @@ int main()
 
 		edge temp(s1,s2);
 
-		int ns1=s1.lowest_set_bit(),ns2=s2.lowest_set_bit();
+		bit_vector bs1,bs2;
+		bs1.set_string(s1);
+		bs2.set_string(s2);
 
-		edge_list_opt[ns1].OR(s2);
-		edge_list_opt[ns2].OR(s1);
+		int ns1=bs1.lowest_set_bit(),ns2=bs2.lowest_set_bit();
+
+		edge_list_opt[ns1].OR(bs2);
+		edge_list_opt[ns2].OR(bs1);
 
 		cin>>temp.selectivity;
 
