@@ -245,9 +245,9 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
 
     double cost = nx*TX + ns*TS + nio*TL;
 
-    cout<<boolString(R->getRelationVec())<<"\t"<<R->getNumTuples()<<"\t"<<R->getNumAttributes()<<endl;;
-    cout<<boolString(S->getRelationVec())<<"\t"<<S->getNumTuples()<<"\t"<<S->getNumAttributes()<<endl;;
-    cout<<cost<<endl<<endl;
+    // cout<<boolString(R->getRelationVec())<<"\t"<<R->getNumTuples()<<"\t"<<R->getNumAttributes()<<endl;;
+    // cout<<boolString(S->getRelationVec())<<"\t"<<S->getNumTuples()<<"\t"<<S->getNumAttributes()<<endl;;
+    // cout<<cost<<endl<<endl;
     // cout<<fnode->getCost()<<" "<<fnode->getNumTuples()<<" "<<fnode->getNumAttributes()<<endl;
 
     return cost;

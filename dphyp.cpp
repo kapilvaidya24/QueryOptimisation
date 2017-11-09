@@ -1398,7 +1398,7 @@ int main()
 		}
 
 		// cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
-		cout<<node_list[i].cost<<" "<<csg_cmp_pair_count<<" "<<node_list.size()<<endl;
+		cout<<node_list[i].cost<<" "<<csg_cmp_pair_count<<endl;
 		// cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
 		// cout<<endl<<endl<<endl;
 	}
