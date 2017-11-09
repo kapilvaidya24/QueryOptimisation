@@ -417,7 +417,7 @@ struct node
 		return ;
 	}
 
-	int get_cost()
+	double get_cost()
 	{
 		return cost;
 	}
@@ -642,8 +642,12 @@ void EmitCsgCmp(bit_vector &s1, bit_vector &s2)
 	{
 		int s_ind=dp_table[s.to_string()];
 
+		// cout<<"cost updated "<<cost <<" "<<node_list[s_ind].get_cost()<<endl;
+		// cout<<node_list[s_ind].rel.to_int()<<" is a node "<<endl<<endl;
+
 		if(cost<node_list[s_ind].get_cost())
 		{
+
 			
 			node_list[s_ind].assign_cost(cost);
 			node_list[s_ind].set_children(s1_ind,s2_ind);
@@ -1389,6 +1393,7 @@ int main()
 	{
 		if(node_list[i].rel.to_int()!=ans)
 		{
+
 			continue;
 		}
 
