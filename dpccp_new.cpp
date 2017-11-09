@@ -20,7 +20,7 @@ double attr_size=16;
 //global variable
 bool check_pair_count=false;
 long long csg_cmp_pair_count=0;
-long long csg_cmp_pair_limit=1000000000000;
+long long csg_cmp_pair_limit=10000000;
 
 
 struct bit_vector
@@ -88,6 +88,11 @@ struct bit_vector
 	{
 		arr|=a.arr;
 		return;
+	}
+
+	void DIFF(bit_vector &a)
+	{
+		arr&=~a.arr;
 	}
 
 	void set_size(int n)
@@ -187,6 +192,8 @@ struct edge
 	}
 
 };
+
+
 
 struct relation_graph
 {
@@ -494,6 +501,8 @@ bit_vector neigh(bit_vector &s,bit_vector &x)
 	// cout<<"neigh returned"<<endl;
  	return neighbour; 
 }
+
+
 
 bool check_edge(bit_vector &a, bit_vector &b)
 {
@@ -1323,6 +1332,149 @@ void Graph_Simplification_Optimizer()
 	return;
 }
 
+bool is_comp=false;
+bit_vector s_org;
+vector<bit_vector> edge_list_opt;
+
+
+bit_vector neigh_opt(bit_vector &S)
+{
+	bit_vector ans;
+
+	for(int i=0;i<S.bit_size;i++)
+	{
+		if(S.arr[i]==1)
+		{
+			ans.OR(edge_list_opt[i]);
+		}
+	}
+
+	return ans;
+}
+
+void EnumerateCmp_opt(bit_vector &S);
+
+
+void EnumerateCsgRec_opt(bit_vector &S,bit_vector &X)
+{
+	bit_vector neighbour=neigh_opt(S);
+	neighbour.DIFF(X);
+
+	long long count=exp2(neighbour.count());
+	bit_vector n;
+	count--;
+
+	for(int i=1;i<=count;i++)
+	{
+		neighbour.subset_enum(n,i);
+		bit_vector temp,temp2;
+
+		temp.assign(S);
+		temp.OR(n);
+		
+		if(is_comp)
+		{
+			temp2.assign(s_org);
+			EmitCsgCmp(temp2,temp);
+		}
+		else
+		{
+			is_comp=true;
+			s_org=temp;
+			EnumerateCmp_opt(temp);
+			is_comp=false;
+		}
+
+	}
+
+	count=exp2(neighbour.count());
+	n;
+	count--;
+	bit_vector x_n;
+	x_n.assign(X);
+	x_n.OR(neighbour);
+
+	for(int i=1;i<=count;i++)
+	{
+		neighbour.subset_enum(n,i);
+		bit_vector temp,temp2;
+
+		temp.assign(S);
+		temp.OR(n);
+		
+		EnumerateCsgRec(temp,x_n);
+
+	}
+
+}
+
+
+void EnumerateCmp_opt(bit_vector &S)
+{
+	bit_vector X;
+	int min_s=S.lowest_set_bit();
+	X.set_lower(min_s);
+	X.OR(S);
+
+	bit_vector neighbour=neigh_opt(S);
+	neighbour.DIFF(X);
+	bit_vector x_n;
+	x_n.assign(X);
+	x_n.OR(neighbour);
+
+	for(int i=0;i<neighbour.bit_size;i++)
+	{
+		if(neighbour.arr[i]==1)
+		{
+			bit_vector vi;
+			vi.set_index(i);
+			EmitCsgCmp(S,vi);
+			EnumerateCsgRec_opt(vi,x_n);
+		}
+	}
+	return ;
+
+
+}
+
+
+void Solve_opt()
+{
+	dp_table.clear();
+	node_list.resize(0);
+
+	for(int i=0;i<graph.size();i++)
+	{
+		node temp;
+		temp.rel.set_size(graph.size());
+		temp.rel.set_index(graph.size()-i-1);
+		temp.assign_cost(0);
+		temp.assign_num_tuples(tuple_list[i]);
+		temp.assign_num_attr(attr_list[i]);
+
+		node_list.push_back(temp);
+		dp_table[temp.rel.to_string()]=node_list.size()-1;
+
+	}
+
+	// print_map(dp_table);
+
+	for(int i=graph.size()-1;i>=0;i--)
+	{
+		bit_vector v;
+		v.set_size(graph.size());
+		v.set_index(i);
+
+		bit_vector Bv;
+		Bv.set_size(graph.size());
+		Bv.set_lower(i);
+		Bv.set_index(i);
+
+		EmitCsg(v);
+		EnumerateCsgRec_opt(v,Bv);
+
+	}
+}
 
 
 int main()
@@ -1336,11 +1488,22 @@ int main()
 
 	// cout<<n<<endl;
 
+	edge_list_opt.resize(graph.GraphSize);
+
 	for(int i=0;i<n;i++)
 	{
 		cin>>s1>>s2;
 
 		edge temp(s1,s2);
+
+		bit_vector bs1,bs2;
+		bs1.set_string(s1);
+		bs2.set_string(s2);
+
+		int ns1=bs1.lowest_set_bit(),ns2=bs2.lowest_set_bit();
+
+		edge_list_opt[ns1].OR(bs2);
+		edge_list_opt[ns2].OR(bs1);
 
 		cin>>temp.selectivity;
 
@@ -1398,7 +1561,7 @@ int main()
 		}
 
 		// cout<<node_list[i].rel.to_int()<<" is a node "<<i<<endl;
-		cout<<node_list[i].cost<<" "<<csg_cmp_pair_count<<endl;
+		cout<<node_list[i].cost<<" "<<csg_cmp_pair_count<<" "<<node_list.size()<<endl;
 		// cout<<node_list[max(node_list[i].child[0],0)].rel.to_int()<<" childeren "<<node_list[max(node_list[i].child[1],0)].rel.to_int()<<endl;
 		// cout<<endl<<endl<<endl;
 	}
