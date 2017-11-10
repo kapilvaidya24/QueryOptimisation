@@ -20,7 +20,7 @@ double attr_size=16;
 //global variable
 bool check_pair_count=false;
 long long csg_cmp_pair_count=0;
-long long csg_cmp_pair_limit=10000000;
+long long csg_cmp_pair_limit=1000000000000;
 
 
 struct bit_vector

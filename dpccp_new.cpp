@@ -1438,6 +1438,44 @@ void EnumerateCmp_opt(bit_vector &S)
 }
 
 
+void Solve_opt()
+{
+	dp_table.clear();
+	node_list.resize(0);
+
+	for(int i=0;i<graph.size();i++)
+	{
+		node temp;
+		temp.rel.set_size(graph.size());
+		temp.rel.set_index(graph.size()-i-1);
+		temp.assign_cost(0);
+		temp.assign_num_tuples(tuple_list[i]);
+		temp.assign_num_attr(attr_list[i]);
+
+		node_list.push_back(temp);
+		dp_table[temp.rel.to_string()]=node_list.size()-1;
+
+	}
+
+	// print_map(dp_table);
+
+	for(int i=graph.size()-1;i>=0;i--)
+	{
+		bit_vector v;
+		v.set_size(graph.size());
+		v.set_index(i);
+
+		bit_vector Bv;
+		Bv.set_size(graph.size());
+		Bv.set_lower(i);
+		Bv.set_index(i);
+
+		EmitCsg(v);
+		EnumerateCsgRec_opt(v,Bv);
+
+	}
+}
+
 
 int main()
 {
