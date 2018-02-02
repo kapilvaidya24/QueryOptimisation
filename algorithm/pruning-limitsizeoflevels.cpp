@@ -82,7 +82,7 @@ public:
         return N;
     }
 
-    vector<bool> getRelationVec() const
+    const vector<bool>& getRelationVec() const
     {
         return relationVec;
     }
@@ -107,12 +107,12 @@ public:
         return cost;
     }
 
-    vector<ExploredNode*> getParents() const
+    const vector<ExploredNode*>& getParents() const
     {
         return parents;
     }
 
-    vector<ExploredNode*> getChilds() const
+    const vector<ExploredNode*>& getChilds() const
     {
         return childs;
     }
@@ -169,7 +169,7 @@ public:
         return N;
     }
 
-    vector<bool> getRelationVec() const
+    const vector<bool>& getRelationVec() const
     {
         return relationVec;
     }
@@ -194,7 +194,7 @@ public:
         return cost;
     }
 
-    vector<ExploredNode*> getChilds() const
+    const vector<ExploredNode*>& getChilds() const
     {
         return childs;
     }
@@ -261,7 +261,8 @@ long long nCr(int n, int r)
         res = res * (n-r+i);
         res = res / i;
     }
-    return 1;
+    return res;
+    // return 1;
     // return ceil(1.0 *res / 100000000);
 }
 
@@ -277,9 +278,8 @@ class Explored
     vector<long long> levelSizes;
     vector<long long> limits;
 
-    vector<ExploredNode*> getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel)
+    void getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
-        vector<ExploredNode*> joinCandidates;
         vector<ExploredNode*> parents = node->getParents();
         for (auto& p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
@@ -289,14 +289,12 @@ class Explored
                 {
                     if (canResultNodeBeAdded(targetRel, p->getRelationVec()))
                     {
-                        joinCandidates.push_back(p);
+                        resultCandidates.push_back(p);
                     }
-                    vector<ExploredNode*> ancestralCandidates = getAncestralJoinCandidates(p, targetRel, neighRel);
-                    joinCandidates.insert(joinCandidates.begin(), ancestralCandidates.begin(), ancestralCandidates.end());
+                    getAncestralJoinCandidates(p, targetRel, neighRel, resultCandidates);
                 }
             }
         }
-        return joinCandidates;
     }
 
 public:
@@ -316,14 +314,13 @@ public:
         levelSizes.resize(N, 0);
         limits.resize(N, 0);
         levelSizes[0] = N;
-        // levelSizes[0] = N;
         for(int i = 0; i < N; i++)
         {
             limits[i] = nCr(N, i+1);
         }
     }
 
-    vector<ExploredNode*> getLeafNodes()
+    const vector<ExploredNode*>& getLeafNodes()
     {
         return leafNodes;
     }
@@ -409,22 +406,19 @@ public:
     // return the nodes that can be joined with node targetRel i.e.
     // nodes that don't have any relation which is present in targetRel but have at least one rel which is in neighRel
     // Also don't return nodes such that joining targetRel and the node results in a node which is already there in explored
-    vector<ExploredNode*> getJoinCandidates(const vector<bool>& targetRel, const vector<bool>& neighRel)
+    void getJoinCandidates(const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
-        vector<ExploredNode* > candidates;
         for (int i = 0; i < N; ++i)
         {
             if (neighRel[i])
             {
                 if (canResultNodeBeAdded(targetRel, leafNodes[i]->getRelationVec()))
                 {
-                    candidates.push_back(leafNodes[i]);
+                    resultCandidates.push_back(leafNodes[i]);
                 }
-                vector<ExploredNode*> ancestralCandidates = getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel);
-                candidates.insert(candidates.begin(), ancestralCandidates.begin(), ancestralCandidates.end());
+                getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel, resultCandidates);
             }
         }
-        return candidates;
     }
 
     int size()
@@ -593,8 +587,8 @@ int main()
             }
         }
 
-        vector<ExploredNode*> candidates = explored.getJoinCandidates(relationVec, neighbourRel);
-
+        vector<ExploredNode*> candidates;
+        explored.getJoinCandidates(relationVec, neighbourRel, candidates);
         int numNewNodes = candidates.size();
         vector<FrontierNode*> newFrontierNodes(numNewNodes);
 
