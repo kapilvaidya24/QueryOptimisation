@@ -29,6 +29,8 @@ class FrontierNode;
 
 double joinCost(const ExploredNode* a, const ExploredNode* b);
 
+long long limitFn(int n, int r);
+
 class ExploredNode
 {
     int N;
@@ -292,7 +294,7 @@ class Explored
                     {
                         resultCandidates.push_back(p);
                     }
-                    getAncestralJoinCandidates(p, targetRel, neighRel, resultCandidates, count);
+                    getAncestralJoinCandidates(p, targetRel, neighRel, resultCandidates);
                 }
             }
         }
@@ -420,7 +422,7 @@ public:
                     // x++;
                     resultCandidates.push_back(leafNodes[i]);
                 }
-                getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel, resultCandidates, count);
+                getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel, resultCandidates);
             }
         }
         // cout<<"Join Candidates : "<<count<<" "<<resultCandidates.size()-x<<endl;
