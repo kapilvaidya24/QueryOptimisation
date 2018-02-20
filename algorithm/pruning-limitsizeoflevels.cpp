@@ -253,16 +253,16 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
     return cost;
 }
 
-long long nCr(int n, int r)
+long long limitFn(int n, int r)
 {
-    long long res = 1;
-    for (int i = 1; i <= r; i++)
-    {
-        res = res * (n-r+i);
-        res = res / i;
-    }
-    return res;
-    // return 1;
+    // long long res = 1;
+    // for (int i = 1; i <= r; i++)
+    // {
+    //     res = res * (n-r+i);
+    //     res = res / i;
+    // }
+    return r*(n-r);
+    // return res;
     // return ceil(1.0 *res / 100000000);
 }
 
@@ -280,6 +280,7 @@ class Explored
 
     void getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
+        // count++;
         vector<ExploredNode*> parents = node->getParents();
         for (auto& p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
@@ -291,7 +292,7 @@ class Explored
                     {
                         resultCandidates.push_back(p);
                     }
-                    getAncestralJoinCandidates(p, targetRel, neighRel, resultCandidates);
+                    getAncestralJoinCandidates(p, targetRel, neighRel, resultCandidates, count);
                 }
             }
         }
@@ -314,9 +315,9 @@ public:
         levelSizes.resize(N, 0);
         limits.resize(N, 0);
         levelSizes[0] = N;
-        for(int i = 0; i < N; i++)
+        for(int i = 1; i < N; i++)
         {
-            limits[i] = nCr(N, i+1);
+            limits[i] = limitFn(N, i);
         }
     }
 
@@ -408,17 +409,23 @@ public:
     // Also don't return nodes such that joining targetRel and the node results in a node which is already there in explored
     void getJoinCandidates(const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
+        // int count = 0;
+        // int x = 0;
         for (int i = 0; i < N; ++i)
         {
             if (neighRel[i])
             {
                 if (canResultNodeBeAdded(targetRel, leafNodes[i]->getRelationVec()))
                 {
+                    // x++;
                     resultCandidates.push_back(leafNodes[i]);
                 }
-                getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel, resultCandidates);
+                getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel, resultCandidates, count);
             }
         }
+        // cout<<"Join Candidates : "<<count<<" "<<resultCandidates.size()-x<<endl;
+        // count1+=count;
+        // count2+=resultCandidates.size()-x;
     }
 
     int size()
@@ -443,6 +450,14 @@ public:
                 count++;
         }
         return canAddAtLevel(count - 1);
+    }
+    void printLevelSizes()
+    {
+        for(int i = 0; i < N; i++)
+        {
+            cout<<levelSizes[i]<<" ";
+        }
+        cout<<endl;
     }
 };
 
@@ -561,6 +576,7 @@ int main()
 
     nodeCount = frontier.size();
 
+    // int count1 = 0, count2 = 0;
     while (!explored.targetAchieved())
     {
         FrontierNode* fnode = frontier.removeMinNode();
@@ -605,7 +621,8 @@ int main()
         nodeCount += newFrontierNodes.size();
         delete fnode;
     }
-
+    // cout<<"AncestralJoin Function called : "<<count1<<", result : "<<count2<<endl;
     cout<<explored.getTargetNode()->getCost()<<" "<<nodeCount<<" "<<explored.size()<<endl;
+    // explored.printLevelSizes();
     return 0;
 }
