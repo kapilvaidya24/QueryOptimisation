@@ -22,6 +22,7 @@ string boolString(const vector<bool> & a)
 class RelationGraph
 {
     int N;
+    int numEdges;
     vector<vector<double> > adjMatrix;
     vector<int> numTuples;
     vector<int> numAttributes;
@@ -34,6 +35,18 @@ public:
         adjMatrix = adjMatrix_;
         numTuples = numTuples_;
         numAttributes = numAttributes_;
+        int count = 0;
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = i + 1; j < N; j++)
+            {
+                if (adjMatrix[i][j] > 0)
+                {
+                    count++;
+                }
+            }
+        }
+        numEdges = count;
     }
 
     RelationGraph(int N_, const vector<pair<int, int> >& edges, const vector<double>& selectivities, const vector<int>& numTuples_, const vector<int>& numAttributes_)
@@ -51,6 +64,7 @@ public:
         }
         numTuples = numTuples_;
         numAttributes = numAttributes_;
+        numEdges = edges.size();
     }
 
     int getNumRelations() const
@@ -74,7 +88,7 @@ public:
     vector<pair<int, int> > getEdges() const
     {
         vector<pair<int, int> > edges;
-        for(int i = 0; i < N; i++)
+        for (int i = 0; i < N; i++)
         {
             for(int j = i + 1; j < N; j++)
             {
@@ -87,6 +101,10 @@ public:
         return edges;
     }
 
+    int getNumEdges() const
+    {
+        return numEdges;
+    }
     // double getNumTuples(vector<bool> relationVec)
     // {
     //     //assert relationVec.size() == N

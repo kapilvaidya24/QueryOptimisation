@@ -29,7 +29,7 @@ class FrontierNode;
 
 double joinCost(const ExploredNode* a, const ExploredNode* b);
 
-long long limitFn(int n, int r);
+long long limitFn(int n, int r, const RelationGraph& relGraph);
 
 class ExploredNode
 {
@@ -255,7 +255,7 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
     return cost;
 }
 
-long long limitFn(int n, int r)
+long long limitFn(int n, int r, const RelationGraph& relGraph)
 {
     // long long res = 1;
     // for (int i = 1; i <= r; i++)
@@ -263,7 +263,7 @@ long long limitFn(int n, int r)
     //     res = res * (n-r+i);
     //     res = res / i;
     // }
-    return r*(n-r);
+    return relGraph.getNumEdges() * r * (n-r) / min (relGraph.getNumEdges(), n - 1);
     // return res;
     // return ceil(1.0 *res / 100000000);
 }
@@ -319,7 +319,7 @@ public:
         levelSizes[0] = N;
         for(int i = 1; i < N; i++)
         {
-            limits[i] = limitFn(N, i);
+            limits[i] = limitFn(N, i, relGraph);
         }
     }
 
