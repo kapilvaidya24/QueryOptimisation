@@ -812,7 +812,6 @@ int main()
         edges[i] = make_pair(x, y);
         cin>>selectivities[i];
     }
-    cout<<setprecision(10)<<selectivities[2][0]<<endl;
     for(int i = 0; i < N; i++)
     {
         cin>>numTuples[i]>>numAttributes[i];
@@ -839,14 +838,14 @@ int main()
 
             // vector<bool> a = {true, true, true, false, true, true, true, false, true, false, false};
 
-            for(int l = 0; l < N; l++)
-            {
-                count += (relationVec[l]);
-            }
-            if(count == N-1)
-            {
-                cout<<"Found\n";
-            }
+            // for(int l = 0; l < N; l++)
+            // {
+            //     count += (relationVec[l]);
+            // }
+            // if(count == N-1)
+            // {
+            //     cout<<"Found\n";
+            // }
 
             if (optimalCost != -1 && optimalCost < fnode->getCost())
             {
