@@ -2,9 +2,9 @@ DIRECTORY="testcases"
 if [ ! -d "$DIRECTORY" ]; then
 	mkdir "$DIRECTORY"
 fi
-for querytype in 'star' 'chain' 'clique'
+for querytype in 'star' 'clique'
 do
-	for size in `seq 5 16`
+	for size in `seq 17 40`
 	do
 		for i in `seq 0 9`
 		do

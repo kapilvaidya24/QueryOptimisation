@@ -22,10 +22,28 @@ const double TX = 2.6;
 const double I1 = 1;
 const double I2 = 1;
 
+const int NUM_ITERATIONS = 10;
 
 class ExploredNode;
 
 class FrontierNode;
+
+class Explored;
+
+class StoredFrontierNodes;
+
+class Frontier;
+
+void printRelationVec(const vector<bool>& vec)
+{
+    for (int i = 0; i < vec.size(); i++)
+    {
+        if (vec[i])
+            cout<<"1";
+        else
+            cout<<"0";
+    }
+}
 
 double joinCost(const ExploredNode* a, const ExploredNode* b);
 
@@ -38,7 +56,7 @@ class ExploredNode
     double numTuples;
     int numAttributes;
     double cost;
-    vector<ExploredNode*> parents;
+    set<ExploredNode*> parents;
     vector<ExploredNode*> childs;
     // bool isleaf;
 
@@ -109,7 +127,7 @@ public:
         return cost;
     }
 
-    const vector<ExploredNode*>& getParents() const
+    const set<ExploredNode*>& getParents() const
     {
         return parents;
     }
@@ -121,7 +139,37 @@ public:
 
     void addParent(ExploredNode* parent)
     {
-        parents.push_back(parent);
+        parents.insert(parent);
+    }
+
+    void removeParent(ExploredNode* parent)
+    {
+        int removed = parents.erase(parent);
+        if (removed != 1)
+        {
+            cout<<"Unexpected Behaviour: Parent not found\n";
+        }
+    }
+
+    void adoptParents(ExploredNode* node)
+    {
+        parents = move(node->parents);
+        for (auto p : parents)
+        {
+            p->updateChild(node, this);
+        }
+    }
+
+    void updateChild(ExploredNode* prevChild, ExploredNode* newChild)
+    {
+        for (int i = 0; i < childs.size(); i++)
+        {
+            if (childs[i] == prevChild)
+            {
+                childs[i] = newChild;
+                return;
+            }
+        }
     }
 };
 
@@ -233,7 +281,6 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
     {
         return joinCost(S, R);
     }
-    auto newEdge = make_pair(R->getRelationVec(), S->getRelationVec());
 
     double aPages = ceil(R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
     double bPages = ceil(S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
@@ -263,7 +310,8 @@ long long limitFn(int n, int r, const RelationGraph& relGraph)
     //     res = res * (n-r+i);
     //     res = res / i;
     // }
-    return relGraph.getNumEdges() * r * (n-r) / min (relGraph.getNumEdges(), n - 1);
+    // return ceil(relGraph.getNumEdges() * ( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
+    return ceil(sqrt( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
     // return res;
     // return ceil(1.0 *res / 100000000);
 }
@@ -280,20 +328,20 @@ class Explored
     vector<long long> levelSizes;
     vector<long long> limits;
 
-    void getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
+    void getAncestralJoinCandidates(const ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
         // count++;
-        vector<ExploredNode*> parents = node->getParents();
+        const set<ExploredNode*>& parents = node->getParents();
         for (auto& p: parents) {
             // Add parent only if this is the first child of parent OR 1st child of parent is not a possible join candidate
             if (AreRelationsExclusive(p->getRelationVec(), targetRel)) {
                 if (p->getChilds()[0] == node ||
                     !isJoinCandidate(p->getChilds()[0]->getRelationVec(), targetRel, neighRel))
                 {
-                    if (canResultNodeBeAdded(targetRel, p->getRelationVec()))
-                    {
+                    // if (canResultNodeBeAdded(targetRel, p->getRelationVec()))
+                    // {
                         resultCandidates.push_back(p);
-                    }
+                    // }
                     getAncestralJoinCandidates(p, targetRel, neighRel, resultCandidates);
                 }
             }
@@ -323,64 +371,139 @@ public:
         }
     }
 
-    const vector<ExploredNode*>& getLeafNodes()
+    const vector<ExploredNode*>& getLeafNodes() const
     {
         return leafNodes;
     }
 
-    bool targetAchieved()
+    bool targetAchieved() const
     {
         return isTargetAchieved;
     }
 
-    ExploredNode* getTargetNode()
+    ExploredNode* getTargetNode() const
     {
         return targetNode;
     }
 
-    bool isNodeExplored(const vector<bool> & vec)
+    void setTargetAchievedFalse()
+    {
+        isTargetAchieved = false;
+    }
+
+    bool isNodeExplored(const vector<bool> & vec) const
     {
         return (nodeMap.count(vec) > 0);
     }
 
-    bool canResultNodeBeAdded(const vector<bool>& a, const vector<bool>& b)
+    bool isBetterCostNode(const vector<bool> & relationVec, double cost)
     {
-        vector<bool> result(N, false);
+        return ((nodeMap.count(relationVec) > 0) && (nodeMap[relationVec]->getCost() > cost));
+    }
+
+    // bool canResultNodeBeAdded(const vector<bool>& a, const vector<bool>& b) const
+    // {
+    //     vector<bool> result(N, false);
+    //     for (int i = 0; i < N; i++)
+    //     {
+    //         result[i] = a[i] || b[i];
+    //     }
+    //     return (nodeMap.count(result) == 0) and canAddNode(result);
+    // }
+
+    void increaseLimitsByFactor(int factor)
+    {
         for (int i = 0; i < N; i++)
         {
-            result[i] = a[i] || b[i];
+            limits[i] *= factor;
         }
-        return (nodeMap.count(result) == 0) and canAddNode(result);
     }
+
     void addNode(ExploredNode* enode)
     {
-        int i;
-        int count = 0;
-        for (i = 0; i < N; i++)
+        vector<bool> relationVec = enode->getRelationVec();
+        auto it = nodeMap.find(relationVec);
+        if (it == nodeMap.end())
         {
-            if (enode->hasRelation(i))
+            int i;
+            int count = 0;
+            for (i = 0; i < N; i++)
             {
-                count++;
+                if (relationVec[i])
+                {
+                    count++;
+                }
+            }
+            // TO DO: assert canAddAtLevel(count - 1);
+            if (count == N)
+            {
+                isTargetAchieved = true;
+                targetNode = enode;
+            }
+            vector<ExploredNode*> childs = enode->getChilds();
+
+            for (auto& child: childs)
+            {
+                if(child->getRelationVec().size() != N)
+                {
+                    cout<<"invalid child"<<endl;
+                }
+                child->addParent(enode);
+            }
+
+            nodeMap[enode->getRelationVec()] = enode;
+            levelSizes[count - 1]++;
+            // cout<<"Adding node "<<boolString(relationVec)<<endl;
+        }
+        else
+        {
+            ExploredNode* prevNode = it->second;
+            if (enode->getCost() < prevNode->getCost())
+            {
+                int i;
+                int count = 0;
+                for (i = 0; i < N; i++)
+                {
+                    if (relationVec[i])
+                    {
+                        count++;
+                    }
+                }
+                if (count == N)
+                {
+                    isTargetAchieved = true;
+                    targetNode = enode;
+                }
+                vector<ExploredNode*> childs = enode->getChilds();
+
+                for (auto& child: childs)
+                {
+                    child->addParent(enode);
+                }
+
+                for (auto& child: prevNode->getChilds())
+                {
+                    child->removeParent(prevNode);
+                }
+                // Ideally, we should also change childs of node in frontier corresponding to prevNode
+                // But this will be taken care of by the new child thus formed that will have lesser cost than earlier node in frontier
+
+                enode->adoptParents(prevNode);
+                nodeMap[enode->getRelationVec()] = enode;
+                delete prevNode;
+                // cout<<"Deleting "<<prevNode<<" : "<<enode<<endl;
+
+                // cout<<"Updating node "<<boolString(relationVec)<<endl;
+            }
+            else
+            {
+                delete enode;
             }
         }
-        if (count == N)
-        {
-            isTargetAchieved = true;
-            targetNode = enode;
-        }
-        vector<ExploredNode*> childs = enode->getChilds();
-
-        for (auto& child: childs)
-        {
-            child->addParent(enode);
-        }
-
-        nodeMap[enode->getRelationVec()] = enode;
-        levelSizes[count - 1]++;
-
+        
     }
 
-    bool isJoinCandidate(const vector<bool>& candidate, const vector<bool>& targetRel, const vector<bool>& neighRel)
+    bool isJoinCandidate(const vector<bool>& candidate, const vector<bool>& targetRel, const vector<bool>& neighRel) const
     {
         // assert size of all three N
         int status = false;
@@ -394,7 +517,7 @@ public:
         return status;
     }
 
-    bool AreRelationsExclusive(const vector<bool>& rel1, const vector<bool>& rel2)
+    bool AreRelationsExclusive(const vector<bool>& rel1, const vector<bool>& rel2) const
     {
         for (int i = 0; i < N; i++)
         {
@@ -408,7 +531,7 @@ public:
 
     // return the nodes that can be joined with node targetRel i.e.
     // nodes that don't have any relation which is present in targetRel but have at least one rel which is in neighRel
-    // Also don't return nodes such that joining targetRel and the node results in a node which is already there in explored
+    // NO LONGER VALID for incremental algorithm: Also don't return nodes such that joining targetRel and the node results in a node which is already there in explored
     void getJoinCandidates(const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
         // int count = 0;
@@ -417,11 +540,11 @@ public:
         {
             if (neighRel[i])
             {
-                if (canResultNodeBeAdded(targetRel, leafNodes[i]->getRelationVec()))
-                {
+                //if (canResultNodeBeAdded(targetRel, leafNodes[i]->getRelationVec()))
+                // {
                     // x++;
                     resultCandidates.push_back(leafNodes[i]);
-                }
+                // }
                 getAncestralJoinCandidates(leafNodes[i], targetRel, neighRel, resultCandidates);
             }
         }
@@ -430,19 +553,19 @@ public:
         // count2+=resultCandidates.size()-x;
     }
 
-    int size()
+    int size() const
     {
         return nodeMap.size();
     }
 
-    bool canAddAtLevel(int level)
+    bool canAddAtLevel(int level) const
     {
         if (level < 0 or level >= N)
             return false;
         return levelSizes[level] < limits[level];
     }
 
-    bool canAddNode(vector<bool> relationVec)
+    bool canAddNode(vector<bool> relationVec) const
     {
         // TO DO: Do i need to check if node already exists in explored
         int count = 0;
@@ -453,14 +576,119 @@ public:
         }
         return canAddAtLevel(count - 1);
     }
-    void printLevelSizes()
+    void printLevelSizes() const
     {
         for(int i = 0; i < N; i++)
         {
-            cout<<levelSizes[i]<<" ";
+            cout<<levelSizes[i]<<"/"<<limits[i]<<" ";
         }
         cout<<endl;
     }
+
+    void printPath(ExploredNode* enode)
+    {
+        if (enode->getChilds().size() == 0)
+        {
+            for(int i = 0; i < N; i++)
+            {
+                if(enode->hasRelation(i))
+                    cout<<i;
+            }
+        }
+        else
+        {
+            cout<<"(";
+            printPath(enode->getChilds()[0]);
+            cout<<"x";
+            printPath(enode->getChilds()[1]);
+            cout<<")";
+        }
+    }
+    void printPath()
+    {
+        printPath(targetNode);
+        cout<<endl;
+    }
+};
+
+class StoredFrontierNodes
+{
+    int N;
+    set<FrontierNode*, FrontierNodeComparator> excessNodes;
+    unordered_map<vector<bool>, FrontierNode*> excessNodeMap;
+    vector<long long> limits;
+    vector<long long> levelSizes;
+
+public:
+    StoredFrontierNodes(int N_, int factor, RelationGraph relGraph)
+    {
+        N = N_;
+        limits.resize(N);
+        levelSizes.resize(N, 0);
+        for(int i = 1; i < N; i++)
+        {
+            limits[i] = factor * limitFn(N, i, relGraph);
+        }
+    }
+
+    void handleNode(FrontierNode* fnode)
+    {
+        const vector<bool>& relationVec = fnode->getRelationVec();
+        auto it = excessNodeMap.find(relationVec);
+        if (it == excessNodeMap.end())
+        {
+            int count = 0;
+            for (int i = 0; i < relationVec.size(); i++)
+            {
+                if (relationVec[i])
+                    count++;
+            }
+
+            if (canAddAtLevel(count - 1))
+            {
+                excessNodes.insert(fnode);
+                excessNodeMap[relationVec] = fnode;
+            }
+            else
+            {
+                // Assumption here is that nodes are coming in increasong order
+                // Otherwise check if there is a node of hogher cost at this level
+                delete fnode;
+            }
+        }
+        else
+        {
+            // Assumption here is that nodes are coming in increasong order
+            // Otherwise check if there is a node of hogher cost at this level
+            delete fnode;
+        }
+    }
+
+    bool canAddAtLevel(int level) const
+    {
+        if (level < 0 or level >= N)
+            return false;
+        return levelSizes[level] < limits[level];
+    }
+
+    bool canAddNode(vector<bool> relationVec) const
+    {
+        int count = 0;
+        for (int i = 0; i < relationVec.size(); i++)
+        {
+            if (relationVec[i])
+                count++;
+        }
+        return canAddAtLevel(count - 1);
+    }
+
+    void clear()
+    {
+        excessNodes.clear();
+        excessNodeMap.clear();
+    }
+
+    friend class Frontier;
 };
 
 class Frontier
@@ -513,11 +741,12 @@ public:
         else
         {
             FrontierNode* prevNode = it->second;
-            if (fnode->getCost() < prevNode->getCost())
+            if (fnode->getCost() <= prevNode->getCost())
             {
                 frontierNodes.erase(prevNode);
                 frontierNodes.insert(fnode);
                 nodeMap[relationVec] = fnode;
+                delete prevNode;
                 // cout<<"Updating node "<<boolString(relationVec)<<endl;
             }
         }
@@ -531,12 +760,28 @@ public:
         }
     }
 
-    int size()
+    void transfer(StoredFrontierNodes& storedFrontierNodes)
+    {
+        nodeMap = move(storedFrontierNodes.excessNodeMap);
+        frontierNodes = move(storedFrontierNodes.excessNodes);
+    }
+
+    void clear()
+    {
+        frontierNodes.clear();
+        nodeMap.clear();
+    }
+
+    int size() const
     {
         return frontierNodes.size();
     }
-};
 
+    bool isEmpty() const
+    {
+        return frontierNodes.empty();
+    }
+};
 
 int main()
 {
@@ -567,6 +812,7 @@ int main()
         edges[i] = make_pair(x, y);
         cin>>selectivities[i];
     }
+    cout<<setprecision(10)<<selectivities[2][0]<<endl;
     for(int i = 0; i < N; i++)
     {
         cin>>numTuples[i]>>numAttributes[i];
@@ -575,56 +821,135 @@ int main()
     RelationGraph graph(N, edges, selectivities, numTuples, numAttributes);
     Explored explored(graph);
     Frontier frontier(N, explored.getLeafNodes(), graph);
+    StoredFrontierNodes storedFrontierNodes(N, pow(2, NUM_ITERATIONS) - 2, graph);
 
     nodeCount = frontier.size();
 
     // int count1 = 0, count2 = 0;
-    while (!explored.targetAchieved())
+    double optimalCost = -1.0;
+    
+    for (int iteration = 0; iteration < NUM_ITERATIONS; iteration++)
     {
-        FrontierNode* fnode = frontier.removeMinNode();
-        ExploredNode* enode = new ExploredNode(*fnode);
-
-        vector<bool> relationVec = fnode->getRelationVec();
-
-        if (!explored.canAddNode(relationVec))
+        while (!explored.targetAchieved() && !frontier.isEmpty())
         {
-            delete fnode;
-            continue;
-        }
+            FrontierNode* fnode = frontier.removeMinNode();
 
-        vector<bool> neighbourRel(N, false);
-        for (int i = 0; i < N; i++)
-        {
-            if (relationVec[i])
+            vector<bool> relationVec = fnode->getRelationVec();
+            int count = 0;
+
+            // vector<bool> a = {true, true, true, false, true, true, true, false, true, false, false};
+
+            for(int l = 0; l < N; l++)
             {
-                vector<bool> neighbours = graph.getNeighbourVec(i);
-                for (int i = 0; i < N; i++)
+                count += (relationVec[l]);
+            }
+            if(count == N-1)
+            {
+                cout<<"Found\n";
+            }
+
+            if (optimalCost != -1 && optimalCost < fnode->getCost())
+            {
+                delete fnode;
+                continue;
+            }
+            if (explored.isNodeExplored(relationVec))
+            {
+                if(!explored.isBetterCostNode(relationVec, fnode->getCost()))
                 {
-                    neighbourRel[i] = neighbourRel[i] || (neighbours[i] && !relationVec[i]);
+                    delete fnode;
+                    continue;
                 }
             }
+            else if (!explored.canAddNode(relationVec))
+            {
+                storedFrontierNodes.handleNode(fnode);
+                continue;
+            }
+
+            ExploredNode* enode = new ExploredNode(*fnode);
+
+            vector<bool> neighbourRel(N, false);
+            for (int i = 0; i < N; i++)
+            {
+                if (relationVec[i])
+                {
+                    vector<bool> neighbours = graph.getNeighbourVec(i);
+                    for (int i = 0; i < N; i++)
+                    {
+                        neighbourRel[i] = neighbourRel[i] || (neighbours[i] && !relationVec[i]);
+                    }
+                }
+            }
+
+            vector<ExploredNode*> candidates;
+            explored.getJoinCandidates(relationVec, neighbourRel, candidates);
+            int numNewNodes = candidates.size();
+            vector<FrontierNode*> newFrontierNodes(numNewNodes);
+
+            explored.addNode(enode);
+            for (int i = 0; i < numNewNodes; i++)
+            {
+                vector<ExploredNode*> childs(2);
+                childs[0] = enode;
+                childs[1] = candidates[i];
+                newFrontierNodes[i] = new FrontierNode(childs, graph);
+            }
+
+            for (int i = 0; i < numNewNodes; i++)
+            {
+                if (newFrontierNodes[i]->getCost() < optimalCost || optimalCost < 0)
+                {
+                    if (explored.isNodeExplored(newFrontierNodes[i]->getRelationVec()))
+                    {
+                        if(explored.isBetterCostNode(newFrontierNodes[i]->getRelationVec(), newFrontierNodes[i]->getCost()))
+                        {
+                            frontier.addNode(newFrontierNodes[i]);
+                            nodeCount++;
+                        }
+                        else
+                        {
+                            delete newFrontierNodes[i];
+                        }
+                    }
+                    else
+                    {
+                        frontier.addNode(newFrontierNodes[i]);
+                        nodeCount++;
+                    }
+                }
+                else
+                {
+                    delete newFrontierNodes[i];
+                }
+            }
+            delete fnode;
         }
-
-        vector<ExploredNode*> candidates;
-        explored.getJoinCandidates(relationVec, neighbourRel, candidates);
-        int numNewNodes = candidates.size();
-        vector<FrontierNode*> newFrontierNodes(numNewNodes);
-
-        for (int i = 0; i < numNewNodes; i++)
+        // cout<<"AncestralJoin Function called : "<<count1<<", result : "<<count2<<endl;
+        cout<<"Iteration #"<<iteration<<endl;
+        explored.printLevelSizes();
+        if(explored.targetAchieved())
         {
-            vector<ExploredNode*> childs(2);
-            childs[0] = enode;
-            childs[1] = candidates[i];
-            newFrontierNodes[i] = new FrontierNode(childs, graph);
+            optimalCost = explored.getTargetNode()->getCost();
+            cout<<explored.getTargetNode()->getCost()<<" "<<nodeCount<<" "<<explored.size()<<endl;
+            explored.printPath();
+        }
+        else
+        {
+            cout<<"NO UPDATE"<<endl;
         }
 
-        explored.addNode(enode);
-        frontier.addNodes(newFrontierNodes);
-        nodeCount += newFrontierNodes.size();
-        delete fnode;
+        if (iteration < NUM_ITERATIONS -1)
+        {
+            explored.setTargetAchievedFalse();
+            explored.increaseLimitsByFactor(2);
+            frontier.clear();
+
+            frontier.transfer(storedFrontierNodes);
+
+            storedFrontierNodes.clear();
+        }
     }
-    // cout<<"AncestralJoin Function called : "<<count1<<", result : "<<count2<<endl;
-    cout<<explored.getTargetNode()->getCost()<<" "<<nodeCount<<" "<<explored.size()<<endl;
-    // explored.printLevelSizes();
+
     return 0;
 }

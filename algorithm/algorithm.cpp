@@ -231,7 +231,6 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
     {
         return joinCost(S, R);
     }
-    auto newEdge = make_pair(R->getRelationVec(), S->getRelationVec());
 
     double aPages = ceil(R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
     double bPages = ceil(S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
@@ -262,7 +261,7 @@ class Explored
     bool isTargetAchieved;
     ExploredNode* targetNode;
 
-    void getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
+    void getAncestralJoinCandidates(const ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
         vector<ExploredNode*> parents = node->getParents();
         for (auto& p: parents) {
@@ -456,6 +455,7 @@ public:
                 frontierNodes.erase(prevNode);
                 frontierNodes.insert(fnode);
                 nodeMap[relationVec] = fnode;
+                delete prevNode;
                 // cout<<"Updating node "<<boolString(relationVec)<<endl;
             }
         }

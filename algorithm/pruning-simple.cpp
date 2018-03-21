@@ -27,6 +27,17 @@ class ExploredNode;
 
 class FrontierNode;
 
+void printRelationVec(const vector<bool>& vec)
+{
+    for (int i = 0; i < vec.size(); i++)
+    {
+        if (vec[i])
+            cout<<"1";
+        else
+            cout<<"0";
+    }
+}
+
 double joinCost(const ExploredNode* a, const ExploredNode* b);
 
 long long limitFn(int n, int r, const RelationGraph& relGraph);
@@ -233,7 +244,6 @@ double joinCost(const ExploredNode* R, const ExploredNode* S)
     {
         return joinCost(S, R);
     }
-    auto newEdge = make_pair(R->getRelationVec(), S->getRelationVec());
 
     double aPages = ceil(R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
     double bPages = ceil(S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
@@ -281,7 +291,7 @@ class Explored
     vector<long long> levelSizes;
     vector<long long> limits;
 
-    void getAncestralJoinCandidates(ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
+    void getAncestralJoinCandidates(const ExploredNode* node, const vector<bool>& targetRel, const vector<bool>& neighRel, vector<ExploredNode*>& resultCandidates)
     {
         // count++;
         vector<ExploredNode*> parents = node->getParents();
@@ -519,6 +529,7 @@ public:
                 frontierNodes.erase(prevNode);
                 frontierNodes.insert(fnode);
                 nodeMap[relationVec] = fnode;
+                delete prevNode;
                 // cout<<"Updating node "<<boolString(relationVec)<<endl;
             }
         }
@@ -583,7 +594,6 @@ int main()
     while (!explored.targetAchieved())
     {
         FrontierNode* fnode = frontier.removeMinNode();
-        ExploredNode* enode = new ExploredNode(*fnode);
 
         vector<bool> relationVec = fnode->getRelationVec();
 
@@ -592,6 +602,8 @@ int main()
             delete fnode;
             continue;
         }
+
+        ExploredNode* enode = new ExploredNode(*fnode);
 
         vector<bool> neighbourRel(N, false);
         for (int i = 0; i < N; i++)
