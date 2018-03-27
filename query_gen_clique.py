@@ -93,7 +93,7 @@ for i in range(0,n):
 		if(temp<float(dom_list[i][attr_ind])):
 			temp=float(dom_list[i][attr_ind])
 
-		sel_list.append(float(1/temp)*1000)	
+		sel_list.append(float(1/temp)*4000)	
 
 
 
@@ -119,21 +119,36 @@ for i in range(0,len(sel_list)):
 # print(str(t)+" is value of t")
 
 if(t<1000000 or t>1000000000):
+	if t <= 0:
+		print "t is 0"
 	t=t/10000000
-	t=1/t
+	# t=1/t
 	alpha=math.log(t,2)
-	alpha=alpha/(n-1)
-	alpha=math.pow(alpha,2)
+	alpha=alpha/len(sel_list)
+	alpha=math.pow(2, alpha)
 
 # print(str(alpha)+" is alpha")
 
-for i in range(1,n):
+for i in range(len(sel_list)):
 	# print(sel_list[i-1])
-	sel_list[i-1]=sel_list[i-1]/alpha	
+	sel_list[i]=sel_list[i]/alpha	
 	# print(sel_list[i-1])
 
 
+t=1.0
 
+for i in range(0,n):
+	t=t*float(size_list[i])
+	if i<len(sel_list):
+		t=t*float(sel_list[i])
+
+for i in range(0,len(sel_list)):
+	if i<n:
+		continue
+	t=t*float(sel_list[i])	
+
+
+# print(str(t)+" is value of t")
 
 print(n)
 print((n*(n-1))/2)

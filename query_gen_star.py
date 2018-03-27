@@ -110,16 +110,15 @@ for i in range(0,n-1):
 
 if(t<1000000 or t>1000000000):
 	t=t/10000000
-	t=1/t
 	alpha=math.log(t,2)
-	alpha=alpha/(n-1)
-	alpha=math.pow(alpha,2)
+	alpha=alpha/len(sel_list)
+	alpha=math.pow(2,alpha)
 
 # print(str(alpha)+" is alpha")
 
-for i in range(1,n):
+for i in range(len(sel_list)):
 	# print(sel_list[i-1])
-	sel_list[i-1]=sel_list[i-1]/alpha	
+	sel_list[i]=sel_list[i]/alpha	
 	# print(sel_list[i-1])
 
 

@@ -311,7 +311,8 @@ long long limitFn(int n, int r, const RelationGraph& relGraph)
     //     res = res / i;
     // }
     // return ceil(relGraph.getNumEdges() * ( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
-    return ceil(sqrt( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
+    // return ceil(sqrt( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
+    return ceil(sqrt(r*(n-r)));
     // return res;
     // return ceil(1.0 *res / 100000000);
 }
