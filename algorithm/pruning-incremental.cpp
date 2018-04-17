@@ -45,7 +45,7 @@ void printRelationVec(const vector<bool>& vec)
     }
 }
 
-double joinCost(const ExploredNode* a, const ExploredNode* b);
+// double joinCost(const ExploredNode* a, const ExploredNode* b);
 
 long long limitFn(int n, int r, const RelationGraph& relGraph);
 
@@ -54,7 +54,7 @@ class ExploredNode
     int N;
     vector<bool> relationVec;
     double numTuples;
-    int numAttributes;
+    // int numAttributes;
     double cost;
     set<ExploredNode*> parents;
     vector<ExploredNode*> childs;
@@ -69,7 +69,7 @@ public:
         relationVec[index] = true;
         cost = 0.0;
         numTuples = relGraph.getNumTuples(index);
-        numAttributes = relGraph.getNumAttributes(index);
+        // numAttributes = relGraph.getNumAttributes(index);
         childs.empty();
         parents.empty();
     }
@@ -119,10 +119,10 @@ public:
         return numTuples;
     }
 
-    int getNumAttributes() const
-    {
-        return numAttributes;
-    }
+    // int getNumAttributes() const
+    // {
+    //     return numAttributes;
+    // }
 
     double getCost() const
     {
@@ -180,7 +180,7 @@ class FrontierNode
     int N;
     vector<bool> relationVec;
     double numTuples;
-    int numAttributes;
+    // int numAttributes;
     double cost;
     vector<ExploredNode*> childs;
 public:
@@ -206,14 +206,15 @@ public:
             childs.push_back(childs_[0]);
         }
 
-        numTuples = childs[0]->getNumTuples() *
+        numTuples = 1.0 * childs[0]->getNumTuples() *
                     childs[1]->getNumTuples() *
                     relGraph.getCrossSelectivity(childs[0]->getRelationVec(), childs[1]->getRelationVec());
-        numAttributes = childs[0]->getNumAttributes() +
+        /*numAttributes = childs[0]->getNumAttributes() +
                     childs[1]->getNumAttributes() -
                     relGraph.getNumCrossEdges(childs[0]->getRelationVec(), childs[1]->getRelationVec());
-
-        cost = childs[0]->getCost() + childs[1]->getCost() + joinCost(childs[0], childs[1]);
+*/
+        // cost = childs[0]->getCost() + childs[1]->getCost() + joinCost(childs[0], childs[1]);
+        cost = childs[0]->getCost() + childs[1]->getCost() + numTuples;
     }
 
     int getNumRelations() const
@@ -236,10 +237,10 @@ public:
         return numTuples;
     }
 
-    int getNumAttributes() const
-    {
-        return numAttributes;
-    }
+    // int getNumAttributes() const
+    // {
+    //     return numAttributes;
+    // }
 
     double getCost() const
     {
@@ -258,7 +259,7 @@ ExploredNode::ExploredNode(const FrontierNode& fnode)
     N = fnode.getNumRelations();
     relationVec = fnode.getRelationVec();
     numTuples = fnode.getNumTuples();
-    numAttributes = fnode.getNumAttributes();
+    // numAttributes = fnode.getNumAttributes();
     cost = fnode.getCost();
     childs = fnode.getChilds();
 }
@@ -283,32 +284,32 @@ public:
     }
 };
 
-double joinCost(const ExploredNode* R, const ExploredNode* S)
-{
-    if (R->getNumTuples() > S->getNumTuples())
-    {
-        return joinCost(S, R);
-    }
+// double joinCost(const ExploredNode* R, const ExploredNode* S)
+// {
+//     if (R->getNumTuples() > S->getNumTuples())
+//     {
+//         return joinCost(S, R);
+//     }
 
-    double aPages = ceil(R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
-    double bPages = ceil(S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
+//     double aPages = ceil(R->getNumTuples() * R->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
+//     double bPages = ceil(S->getNumTuples() * S->getNumAttributes() * ATTR_SIZE / PAGE_SIZE);
 
-    double b = ceil((aPages * FUDGE) / (MEM_SIZE - I1));
-    double o = floor((MEM_SIZE - I1) / b);
+//     double b = ceil((aPages * FUDGE) / (MEM_SIZE - I1));
+//     double o = floor((MEM_SIZE - I1) / b);
 
-    double nx = 3 * (aPages + bPages);
-    double nio = ceil(aPages/I1) + ceil(aPages/o) + ceil(bPages/I1) + ceil(bPages/o) + b + ceil(bPages/I2);
-    double ns = 2 + ceil(aPages/o) + ceil(bPages/o) + 2*b;
+//     double nx = 3 * (aPages + bPages);
+//     double nio = ceil(aPages/I1) + ceil(aPages/o) + ceil(bPages/I1) + ceil(bPages/o) + b + ceil(bPages/I2);
+//     double ns = 2 + ceil(aPages/o) + ceil(bPages/o) + 2*b;
 
-    double cost = nx*TX + ns*TS + nio*TL;
+//     double cost = nx*TX + ns*TS + nio*TL;
 
-    // cout<<boolString(R->getRelationVec())<<"\t"<<R->getNumTuples()<<"\t"<<R->getNumAttributes()<<endl;;
-    // cout<<boolString(S->getRelationVec())<<"\t"<<S->getNumTuples()<<"\t"<<S->getNumAttributes()<<endl;;
-    // cout<<cost<<endl<<endl;
-    // cout<<fnode->getCost()<<" "<<fnode->getNumTuples()<<" "<<fnode->getNumAttributes()<<endl;
+//     // cout<<boolString(R->getRelationVec())<<"\t"<<R->getNumTuples()<<"\t"<<R->getNumAttributes()<<endl;;
+//     // cout<<boolString(S->getRelationVec())<<"\t"<<S->getNumTuples()<<"\t"<<S->getNumAttributes()<<endl;;
+//     // cout<<cost<<endl<<endl;
+//     // cout<<fnode->getCost()<<" "<<fnode->getNumTuples()<<" "<<fnode->getNumAttributes()<<endl;
 
-    return cost;
-}
+//     return cost;
+// }
 
 long long limitFn(int n, int r, const RelationGraph& relGraph)
 {
@@ -321,6 +322,7 @@ long long limitFn(int n, int r, const RelationGraph& relGraph)
     // return ceil(relGraph.getNumEdges() * ( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
     // return ceil(sqrt( r * (n-r) / min (relGraph.getNumEdges(), n - 1)));
     return ceil(sqrt(r*(n-r)));
+    // return 1;
     // return res;
     // return ceil(1.0 *res / 100000000);
 }
@@ -590,28 +592,28 @@ public:
         cout<<endl;
     }
 
-    void printPath(ExploredNode* enode)
+    void printPath(ExploredNode* enode, const vector<string>& names)
     {
         if (enode->getChilds().size() == 0)
         {
             for(int i = 0; i < N; i++)
             {
                 if(enode->hasRelation(i))
-                    cout<<i;
+                    cout<<'(' + names[i] + " " + to_string(enode->getNumTuples()) + " " + to_string(enode->getCost()) + ")";
             }
         }
         else
         {
             cout<<"(";
-            printPath(enode->getChilds()[0]);
-            cout<<"x";
-            printPath(enode->getChilds()[1]);
-            cout<<")";
+            printPath(enode->getChilds()[0], names);
+            cout<<" join ";
+            printPath(enode->getChilds()[1], names);
+            cout<<" " + to_string(enode->getNumTuples()) + " " + to_string(enode->getCost()) + ")";
         }
     }
-    void printPath()
+    void printPath(const vector<string>& names)
     {
-        printPath(targetNode);
+        printPath(targetNode, names);
         cout<<endl;
     }
 };
@@ -795,34 +797,43 @@ int main()
     // vector<pair<int, int> > edges { {0, 1}, {1, 2}, {1, 3}, {2, 4} };
     vector<pair<int, int> > edges;
     vector<double> selectivities;
-    vector<int> numTuples;
-    vector<int> numAttributes;
+    vector<long long> numTuples;
+    unordered_map<string, int> relIndexMap;
+    vector<string> relNames;
+    // vector<int> numAttributes;
 
-    cin>>N>>E;
+    cin>>N;
 
-    edges.resize(E);
-    selectivities.resize(E);
     numTuples.resize(N);
-    numAttributes.resize(N);
+    relNames.resize(N);
+    // numAttributes.resize(N);
 
-    string s;
     int x, y;
-    for(int i = 0; i < E; i++)
-    {
-        cin>>s;
-        for (x = 0; s[x] != '1'; x++);
-        cin>>s;
-        for (y = 0; s[y] != '1'; y++);
-
-        edges[i] = make_pair(x, y);
-        cin>>selectivities[i];
-    }
+    long long cardinality;
+    string s1, s2;
     for(int i = 0; i < N; i++)
     {
-        cin>>numTuples[i]>>numAttributes[i];
+        cin>>s1;
+        cin>>cardinality;
+        relIndexMap[s1] = i;
+        relNames[i] = s1;
+        numTuples[i] = cardinality;
+    }
+    
+    cin>>E;
+    edges.resize(E);
+    selectivities.resize(E);
+    for(int i = 0; i < E; i++)
+    {
+        cin>>s1>>s2;
+        cin>>cardinality;
+        x =  relIndexMap[s1];
+        y =  relIndexMap[s2];
+        edges[i] = make_pair(x, y);
+        selectivities[i] = 1.0 * cardinality / numTuples[x] / numTuples[y];
     }
 
-    RelationGraph graph(N, edges, selectivities, numTuples, numAttributes);
+    RelationGraph graph(N, edges, selectivities, numTuples);
     Explored explored(graph);
     Frontier frontier(N, explored.getLeafNodes(), graph);
     StoredFrontierNodes storedFrontierNodes(N, pow(2, NUM_ITERATIONS) - 2, graph);
@@ -831,7 +842,11 @@ int main()
 
     // int count1 = 0, count2 = 0;
     double optimalCost = -1.0;
-    
+    struct timeval start_time, end_time;
+    float time_in_s;
+
+    gettimeofday(&start_time, NULL);
+
     for (int iteration = 0; iteration < NUM_ITERATIONS; iteration++)
     {
         while (!explored.targetAchieved() && !frontier.isEmpty())
@@ -839,6 +854,8 @@ int main()
             FrontierNode* fnode = frontier.removeMinNode();
 
             vector<bool> relationVec = fnode->getRelationVec();
+            // printRelationVec(relationVec);
+            // cout<<endl;
             int count = 0;
 
             // vector<bool> a = {true, true, true, false, true, true, true, false, true, false, false};
@@ -878,10 +895,12 @@ int main()
             {
                 if (relationVec[i])
                 {
-                    vector<bool> neighbours = graph.getNeighbourVec(i);
-                    for (int i = 0; i < N; i++)
+                    vector<int> neighbours = graph.getNeighbours(i);
+                    for (int i = 0; i < neighbours.size(); i++)
                     {
-                        neighbourRel[i] = neighbourRel[i] || (neighbours[i] && !relationVec[i]);
+                        int index = neighbours[i];
+                        if (!relationVec[index])
+                            neighbourRel[index] = 1;
                     }
                 }
             }
@@ -932,13 +951,16 @@ int main()
             delete fnode;
         }
         // cout<<"AncestralJoin Function called : "<<count1<<", result : "<<count2<<endl;
-        cout<<"Iteration #"<<iteration<<endl;
+        gettimeofday(&end_time, NULL);
+
+        time_in_s = (end_time.tv_sec - start_time.tv_sec) + 1.0 * (end_time.tv_usec - start_time.tv_usec) / 1000000;
+        cout<<"Iteration #"<<iteration<<" : "<<time_in_s<<" seconds"<<endl;
         // explored.printLevelSizes();
         if(explored.targetAchieved())
         {
             optimalCost = explored.getTargetNode()->getCost();
             cout<<explored.getTargetNode()->getCost()<<" "<<nodeCount<<" "<<explored.size()<<endl;
-            // explored.printPath();
+            // explored.printPath(relNames);
         }
         else
         {
